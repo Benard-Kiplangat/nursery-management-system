@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { db, getSuppliers, addSupplier } from "../db";
 import { showToast } from "../utils/toast";
 
+
 const CATEGORIES = ["Seeds", "Fertilizer & Soil", "Pots & Trays", "Pesticides & Chemicals", "Tools & Equipment", "Utilities & Overhead"];
 
 const emptyForm = {
@@ -11,6 +12,7 @@ const emptyForm = {
   cropId: "",
   quantity: 1,
   cost: "",
+  units: "",
   purchaseDate: new Date().toISOString().slice(0, 10),
   notes: ""
 };
@@ -57,13 +59,10 @@ export default function Purchase() {
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const liveTotal =
-    (Number(form.quantity) || 0) *
-    (Number(form.cost) || 0);
-
   const handleSave = async () => {
     if (!form.item.trim()) return alert("Please enter the item name purchased.");
     const quantity = Number(form.quantity);
+    const units = form.units;
     const cost = Number(form.cost);
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -71,7 +70,7 @@ export default function Purchase() {
     }
 
     if (!Number.isFinite(cost) || cost < 0) {
-      return alert("Cost must be 0 or greater.");
+      return alert("Total cost must be 0 or greater.");
     }
 
     const supplierObj = suppliers.find(s => s._id === form.supplierId);
@@ -87,8 +86,8 @@ export default function Purchase() {
       cropId: form.cropId || null,
       cropName: cropObj ? cropObj.name : "General Nursery Overhead",
       quantity,
-      cost,
-      totalCost: quantity * cost,
+      units,
+      totalCost: cost,
       notes: form.notes.trim(),
       date: new Date(`${form.purchaseDate}T12:00:00`).toISOString(),
     };
@@ -338,6 +337,17 @@ export default function Purchase() {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Units</label>
+                <input
+  type="text"
+  value={form.units}
+  onChange={e => handleChange("units", e.target.value)}
+  placeholder="Unit e.g. 1kg, 2L, 250ml 5 sachets, etc..."
+  className="border rounded p-2 w-full"
+/>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
                 <input
                   type="number"
@@ -348,19 +358,7 @@ export default function Purchase() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Cost per Unit (KES)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.cost}
-                  onChange={(e) => handleChange("cost", e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm"
-                  placeholder="e.g. 450"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
+               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   Date of Purchase
                 </label>
@@ -375,25 +373,32 @@ export default function Purchase() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Purchase Cost (KES)</label>
+<input
+  type="number"
+  min="0"
+  value={form.cost}
+  onChange={e => handleChange("cost", e.target.value)}
+  placeholder="Total cost"
+  className="border rounded p-2 w-full"
+/>
+              </div>
+
               <div className="">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Notes / Invoice Number</label>
                 <input
                   value={form.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm"
+                  className="w-full h-12 p-2 border border-slate-300 rounded-lg text-sm"
                   placeholder="e.g. Inv #8892 - Delivery via G4S"
                 />
               </div>
-            </div>
-
-            <div className="flex text-sm font-bold align-right pt-4 w-full text-emerald-700">
-              <span className="min-w-[84%]"></span> Total: KES {formatCurrency(liveTotal)}
-            </div>
-
-            <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex justify-end">
               <button onClick={handleSave} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition font-semibold text-sm">
                 Save Purchase Record
               </button>
+            </div>
             </div>
           </div>
 
@@ -407,7 +412,7 @@ export default function Purchase() {
                   <div key={p._id} className="p-4 border border-slate-100 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="font-bold text-slate-900 flex items-center gap-2">
-                        <span>{p.item}</span>
+                        <span>Purchased {p.units} {p.item} {`(${p.quantity})`}</span>
                         <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full uppercase">{p.category}</span>
                       </div>
                       <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
@@ -420,7 +425,7 @@ export default function Purchase() {
 
                     <div className="flex items-center gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 justify-between">
                       <div className="text-right">
-                        <div className="text-xs text-slate-500">{p.quantity} @ KES {formatCurrency(p.cost)}</div>
+                        <div className="text-xs text-slate-500"></div>
                         <div className="text-base font-bold text-emerald-800">KES {formatCurrency(p.totalCost)}</div>
                       </div>
                       <button onClick={() => handleDelete(p)} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-xs font-semibold">

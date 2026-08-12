@@ -68,6 +68,7 @@ if (license === getLicenseCode()) {
   }
     function initialize() {
       if (license.trim() === getLicenseCode()) {
+        console.log(getLicenseCode())
         localStorage.setItem("initialized", "true");
         setInitialized(true);
       }
