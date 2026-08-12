@@ -1,4 +1,3 @@
-// Sales.jsx
 import React, { useEffect, useState } from "react";
 import { db } from "../db";
 import { generateReceipt } from "../utils/generateReceipt";
@@ -7,6 +6,7 @@ import MonthlySummary from "../components/MonthlySummary";
 import SaleList from "../components/SaleList";
 import EditSaleModal from "../components/EditSaleModal";
 import CropSummary from "../components/CropSummary";
+import CustomerSummary from "../components/CustomerSummary";
 import Presale from "./Presale";
 
 export default function Sales() {
@@ -197,17 +197,18 @@ export default function Sales() {
         <button
           onClick={() => setViewMode("presales")}
           className={`px-3 py-1 rounded ${viewMode === "presales"
-              ? "bg-green-600 text-white"
-              : "bg-gray-200"
+            ? "bg-green-600 text-white"
+            : "bg-gray-200"
             }`}
         >
           Presales
         </button>
-        
+
         <button onClick={() => setViewMode("weekly")} className={`px-3 py-1 rounded ${viewMode === "weekly" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Weekly</button>
         <button onClick={() => setViewMode("monthly")} className={`px-3 py-1 rounded ${viewMode === "monthly" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Monthly</button>
-        <button onClick={() => setViewMode("cropSummary")} className={`px-3 py-1 rounded ${viewMode === "cropSummary" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Daily Summaries by Crop</button>
-</div>
+        <button onClick={() => setViewMode("cropSummary")} className={`px-3 py-1 rounded ${viewMode === "cropSummary" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Summaries by Crops</button>
+        <button onClick={() => setViewMode("customerSummary")} className={`px-3 py-1 rounded ${viewMode === "customerSummary" ? "bg-blue-600 text-white" : "bg-gray-200" }`}> Summaries by Customer </button>
+      </div>
 
       {viewMode === "todaySales" && (
         <div>
@@ -275,10 +276,6 @@ export default function Sales() {
         </div>
       )}
 
-      {viewMode === "cropSummary" && (
-        <CropSummary cropSummaries={cropSummaries} allSales={allSales} />
-      )}
-
       {viewMode === "weekly" && (
         <WeeklySummary allSales={allSales} selectedDate={selectedDate} />
       )}
@@ -288,6 +285,16 @@ export default function Sales() {
       )}
       {viewMode === "presales" && (
         <Presale />
+      )}
+
+      {viewMode === "cropSummary" && (
+        <CropSummary cropSummaries={cropSummaries} allSales={allSales} />
+      )}
+
+      {viewMode === "customerSummary" && (
+        <CustomerSummary
+          allSales={allSales}
+        />
       )}
     </div>
   );
