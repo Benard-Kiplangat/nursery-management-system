@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { db } from "../db";
 
 const emptyCustomer = { name: "", phone: "", email: "", notes: "" };
@@ -14,9 +14,22 @@ export default function Customers() {
     loadCustomers();
   }, []);
 
+  useEffect(() => {
+    const handleDataRefresh = () => {
+      loadCustomers();
+    };
+
+    window.addEventListener('bosco:db-changed', handleDataRefresh);
+    return () => window.removeEventListener('bosco:db-changed', handleDataRefresh);
+  }, []);
+
   const loadCustomers = async () => {
     try {
-      const result = await db.allDocs({ include_docs: true });
+      const result = await db.allDocs({
+        include_docs: true,
+        startkey: "customer:",
+        endkey: "customer:\uffff",
+      });
       const customerDocs = result.rows
         .map(row => row.doc)
         .filter(doc => doc && doc.type === "customer")
@@ -87,15 +100,17 @@ export default function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter(c =>
-    !search || c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCustomers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return customers;
+    return customers.filter(c =>
+      c.name?.toLowerCase().includes(query) || c.phone?.toLowerCase().includes(query) || c.email?.toLowerCase().includes(query)
+    );
+  }, [customers, search]);
 
   return (
-    <div className="px-4 pb-32 max-w-xl">
-      <h1 className="text-xl font-bold mb-4">Customers</h1>
-
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+    <div className="px-4 pb-32 px-6">
+      <div className="grid gap-4 grid-cols-2">
         <div className="border rounded p-4 bg-white shadow-sm">
           <h2 className="text-lg font-semibold mb-3">{editingCustomer ? "Edit Customer" : "Add Customer"}</h2>
           <div className="space-y-3">
@@ -151,7 +166,7 @@ export default function Customers() {
 
         <div className="border rounded p-4 bg-white shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Customer list</h2>
+            <h2 className="text-lg font-semibold">Customers</h2>
             <span className="text-xs text-gray-500">{filteredCustomers.length} records</span>
           </div>
           <input

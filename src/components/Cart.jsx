@@ -124,7 +124,6 @@ const handleSale = () => {
                     <option key={c._id} value={c.name}>{c.name}</option>
                   ))}
                 </select>
-              )
 
               <input
                 type="number"

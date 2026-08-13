@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../db";
 import { generateReceipt } from "../utils/generateReceipt";
+import { formatWhole } from "../utils/format";
 import WeeklySummary from "../components/WeeklySummary";
 import MonthlySummary from "../components/MonthlySummary";
 import SaleList from "../components/SaleList";
@@ -8,6 +9,7 @@ import EditSaleModal from "../components/EditSaleModal";
 import CropSummary from "../components/CropSummary";
 import CustomerSummary from "../components/CustomerSummary";
 import Presale from "./Presale";
+import { useAuth } from "../context/AuthContext";
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -21,17 +23,46 @@ export default function Sales() {
   const [editingSale, setEditingSale] = useState(null);
   const [showCreditList, setShowCreditList] = useState(false);
   const [cropSummaries, setCropSummaries] = useState({});
-  const [summary, setSummary] = useState({ totalSales: 0, totalRevenue: 0 });
+  const [summary, setSummary] = useState({ cashReceived: 0, totalRevenue: 0, cashAtHand: 0, totalCreditSales: 0});
   const [viewMode, setViewMode] = useState("todaySales");
   const [groupedSummaries, setGroupedSummaries] = useState({});
   const [selectedSales, setSelectedSales] = useState([]);
   const [allSales, setAllSales] = useState([]);
   const [salesSearch, setSalesSearch] = useState("");
   const [searchRange, setSearchRange] = useState("week");
+  const [purchases, setPurchases] = useState([]);
 
   useEffect(() => {
     loadSales();
+    loadPurchases();
   }, []);
+
+  useEffect(() => {
+  calculateSummary(sales);
+}, [sales, purchases, selectedDate]);
+
+  const loadPurchases = async () => {
+  try {
+    const result = await db.allDocs({
+      include_docs: true,
+    });
+
+    const purchaseDocs = result.rows
+      .map(row => row.doc)
+      .filter(
+        doc =>
+          doc &&
+          doc.type === "purchase"
+      );
+
+    setPurchases(purchaseDocs);
+  } catch (error) {
+    console.error(
+      "Failed to load purchases:",
+      error
+    );
+  }
+};
 
   const loadSales = async (dateStr) => {
     const result = await db.allDocs({ include_docs: true });
@@ -45,7 +76,6 @@ export default function Sales() {
       new Date(sale.timestamp).toLocaleDateString() === today
     );
 
-    calculateSummary(todaySales);
     setSales(todaySales);
 
     const grouped = {};
@@ -72,18 +102,65 @@ export default function Sales() {
         totalSales: acc.totalSales + sale.quantity,
         totalRevenue: acc.totalRevenue + sale.total,
         creditSales: totalCreditSales,
-      }), { totalSales: 0, totalRevenue: 0, creditSales: 0 });
+      }), { totalSales: 0, totalRevenue: 0, creditSales: 0});
       summaryByDate[date] = total;
     }
     setGroupedSummaries(summaryByDate);
   };
 
   const calculateSummary = (salesList) => {
-    const totalDownPayment = salesList.filter((x) => x.isCreditSale).reduce((sum, s) => sum + (s.dwnPayment || 0), 0);
-    const totalSales = salesList.reduce((sum, s) => sum + s.quantity, 0);
-    const totalCreditSales = salesList.filter((x) => x.isCreditSale).reduce((sum, s) => sum + s.total, 0) - totalDownPayment;
-    const totalRevenue = (salesList.filter((x) => !x.isCreditSale).reduce((sum, s) => sum + s.total, 0)) + totalDownPayment;
-    setSummary({ totalSales, totalDownPayment, totalRevenue, totalCreditSales });
+const cashReceived = salesList.reduce(
+  (sum, sale) => {
+    // Presale: use actual payment history
+    if (
+      sale.isPresale &&
+      Array.isArray(sale.paymentHistory)
+    ) {
+      return (
+        sum +
+        sale.paymentHistory.reduce(
+          (paymentSum, payment) =>
+            paymentSum +
+            Number(payment.amount || 0),
+          0
+        )
+      );
+    }
+
+    // Credit sale: only amount actually paid
+    if (sale.isCreditSale) {
+      return (
+        sum +
+        Number(sale.dwnPayment || 0)
+      );
+    }
+
+    // Normal sale: full amount is received
+    return sum + Number(sale.total || 0);
+  },
+  0
+);
+    const totalCreditSales = salesList.filter((x) => (x.isCreditSale)).reduce((sum, s) => sum + s.total, 0) - (salesList.filter((x) => x.isCreditSale).reduce((sum, s) => sum + (s.dwnPayment || 0), 0));
+    const totalRevenue = (salesList.filter((x) => x).reduce((sum, s) => sum + s.total, 0));
+  
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const today = new Date(y, m - 1, d).toLocaleDateString();
+
+    const filteredPurchases = purchases.filter(purchase => {
+  const date = new Date(purchase.date);
+  return (
+    date.toLocaleDateString() === today
+  );
+});
+
+const totalPurchases = filteredPurchases.reduce(
+  (sum, purchase) =>
+    sum + Number(purchase.totalCost || 0),
+  0
+);
+
+const cashAtHand = cashReceived - totalPurchases;
+    setSummary({ cashReceived, totalRevenue, totalCreditSales, cashAtHand });
   };
 
   const handleDeleteSale = async (sale) => {
@@ -188,70 +265,115 @@ export default function Sales() {
     ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   })();
 
+  const { canViewProfit } = useAuth();
+  
+
   return (
     <div className="p-4 pb-32 max-w-xl">
-      <h1 className="text-xl font-bold mb-4">Today's Sales</h1>
+      <h1 className="text-xl font-bold mb-4">Sales History</h1>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button onClick={() => setViewMode("todaySales")} className={`px-3 py-1 rounded ${viewMode === "todaySales" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Daily Sales</button>
-        <button
-          onClick={() => setViewMode("presales")}
-          className={`px-3 py-1 rounded ${viewMode === "presales"
-            ? "bg-green-600 text-white"
-            : "bg-gray-200"
-            }`}
-        >
-          Presales
-        </button>
-
-        <button onClick={() => setViewMode("weekly")} className={`px-3 py-1 rounded ${viewMode === "weekly" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Weekly</button>
-        <button onClick={() => setViewMode("monthly")} className={`px-3 py-1 rounded ${viewMode === "monthly" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Monthly</button>
-        <button onClick={() => setViewMode("cropSummary")} className={`px-3 py-1 rounded ${viewMode === "cropSummary" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Summaries by Crops</button>
-        <button onClick={() => setViewMode("customerSummary")} className={`px-3 py-1 rounded ${viewMode === "customerSummary" ? "bg-blue-600 text-white" : "bg-gray-200" }`}> Summaries by Customer </button>
+      <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+        <div className="flex gap-1 overflow-x-auto">
+          {[
+            ["todaySales", "Daily Sales"],
+            ["presales", "Presales"],
+            ["weekly", "Weekly"],
+            ["monthly", "Monthly"],
+            ["cropSummary", "By Crops"],
+            ["customerSummary", "By Customers"],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                viewMode === mode
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {viewMode === "todaySales" && (
         <div>
-          <div className="space-y-2">
-            Date: <input className="bg-red-500" type="date" name="datePick" id="datePick" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }} />
-            <div className="mb-4">
-              <div>No. of Items Sold: {summary.totalSales}</div>
-              <div>Total Revenue: KES {summary.totalRevenue}</div>
-              <div>Total Due Sales: KES {summary.totalCreditSales}</div>
-            </div>
+          <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="grid grid-cols-2 gap-1">
+                        <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Sales</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">KES {formatWhole(summary.totalRevenue).toLocaleString()}.00</p>
+                        </div>
 
-            <div className="flex gap-2 items-center mb-2">
-              <button
-                onClick={() => setShowCreditList(prev => !prev)}
-                className="px-3 py-1 rounded bg-yellow-400 text-black"
-              >
-                {showCreditList ? "Hide" : "Show"} Credit Sales
-              </button>
-            </div>
+                        <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due Sales</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-amber-600">KES {formatWhole(summary.totalCreditSales).toLocaleString()}.00</p>
+                        </div>
 
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                placeholder="Search by crop or customer..."
-                className="flex-1 p-2 border rounded text-sm"
-                value={salesSearch}
-                onChange={e => setSalesSearch(e.target.value)}
-              />
-              <select
-                value={searchRange}
-                onChange={e => setSearchRange(e.target.value)}
-                className="border rounded p-2 text-sm bg-white"
-              >
-                <option value="week">Past 7 days</option>
-                <option value="month">Past 30 days</option>
-                <option value="all">All time</option>
-              </select>
-            </div>
-            {salesSearch.trim() && (
-              <div className="text-xs text-gray-500 mb-2">
-                {filteredSales.length} result{filteredSales.length !== 1 ? "s" : ""} found
-              </div>
-            )}
+                       <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Revenue</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">KES {formatWhole(summary.cashReceived).toLocaleString()}.00</p>
+                        </div>
+
+          
+                        {canViewProfit && (
+                          <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Cash At Hand</p>
+                            <p className="mt-0.5 truncate text-lg font-bold text-emerald-600">KES {formatWhole(summary.cashAtHand).toLocaleString()}.00</p>
+                          </div>
+                        )}
+                      </div>
+                      </div>
+          <div className="rounded-2xl mb-2 border border-slate-200 bg-white p-2 shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <button
+                          onClick={() => setShowCreditList(prev => !prev)}
+                          className={`inline-flex items-center rounded border ml-4 px-4 py-1.5 text-sm font-semibold transition ${
+                            showCreditList
+                              ? "border-orange-300 bg-orange-50 text-orange-800"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                          }`}
+                        > <input type="checkbox" name="" className="mr-1" id="" readOnly checked={showCreditList ? true : false}/>
+                          {showCreditList ? "Hide" : "Show"} Credit Sales
+                        </button>
+                        <div className="">
+                          <span className="text-sm font-semibold text-slate-700">Sales date: </span>              
+                        <input
+                          className="rounded-lg py-1.5 border ml-2 border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                          type="date"
+                          name="datePick"
+                          id="datePick"
+                          value={selectedDate}
+                          onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }}
+                        />
+                        </div>
+                      </div>
+                      </div>
+          
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Search by product or customer..."
+                          className="min-w-[75px] flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                          value={salesSearch}
+                          onChange={e => setSalesSearch(e.target.value)}
+                        />
+                        <select
+                          value={searchRange}
+                          onChange={e => setSearchRange(e.target.value)}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                        >
+                          <option value="week">Past 7 days</option>
+                          <option value="month">Past 30 days</option>
+                          <option value="all">All time</option>
+                        </select>
+                      </div>
+                      {salesSearch.trim() && (
+                        <div className="text-xs text-gray-500 mb-2">
+                          {filteredSales.length} result{filteredSales.length !== 1 ? "s" : ""} found
+                        </div>
+                      )}
 
             <SaleList
               sales={filteredSales}
@@ -272,7 +394,6 @@ export default function Sales() {
               handleSaveEdit={handleSaveEdit}
               handleCancelEdit={handleCancelEdit}
             />
-          </div>
         </div>
       )}
 

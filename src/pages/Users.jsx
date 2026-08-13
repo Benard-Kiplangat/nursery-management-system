@@ -15,6 +15,15 @@ export default function Users() {
     setEditingUser(null);
   }, [users]);
 
+  useEffect(() => {
+    const handleDataRefresh = () => {
+      refreshUsers();
+    };
+
+    window.addEventListener('bosco:db-changed', handleDataRefresh);
+    return () => window.removeEventListener('bosco:db-changed', handleDataRefresh);
+  }, [refreshUsers]);
+
   if (loading) return <div className="p-4">Loading users...</div>;
   if (!currentUser?.role || currentUser.role !== "admin") {
     return <div className="p-4 text-red-600">You are not authorized to view this page.</div>;
@@ -81,9 +90,9 @@ export default function Users() {
   };
 
   return (
-    <div className="px-4 pb-32 max-w-xl">
+    <div className="px-4 pb-32 px-6">
       <h1 className="text-xl font-bold mb-4">User Management</h1>
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="border rounded p-4 bg-white shadow-sm">
           <h2 className="text-lg font-semibold mb-3">{editingUser ? "Edit User" : "Add User"}</h2>
           <div className="space-y-3">

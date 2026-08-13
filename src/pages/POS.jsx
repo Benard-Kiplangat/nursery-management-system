@@ -33,6 +33,8 @@ export default function POS() {
   const [cart, setCart] = useState([]);
   const [outstandingCredits, setOutstandingCredits] = useState([]);
   const [showUpcoming, setShowUpcoming] = useState(true);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
+
 
 useEffect(() => {
   let cancelled = false;
@@ -60,6 +62,8 @@ useEffect(() => {
   } else {
     setAvailableBatchesByCrop({});
   }
+
+  console.log("Available batches updated:", availableBatchesByCrop[products[0]?._id]);
 
   return () => {
     cancelled = true;
@@ -221,6 +225,58 @@ useEffect(() => {
   loadCustomers();
   loadOutstandingCredits();
 }, []);
+
+useEffect(() => {
+  let cancelled = false;
+
+  const calculateLowStock = async () => {
+    if (!products.length || !batches.length) {
+      setLowStockProducts([]);
+      return;
+    }
+
+    const results = [];
+
+    for (const product of products) {
+      const availableBatches =
+        await getAvailableBatchesForCrop(
+          batches,
+          product._id
+        );
+
+      const available = availableBatches.reduce(
+        (sum, batch) =>
+          sum + Number(batch.availableForSale || 0),
+        0
+      );
+
+      const alertInfo = getStockAlertStatus(
+        product,
+        available
+      );
+
+      if (
+        alertInfo.status === "low_stock" ||
+        alertInfo.status === "out_of_stock"
+      ) {
+        results.push({
+          ...product,
+          availableForSale: available,
+        });
+      }
+    }
+
+    if (!cancelled) {
+      setLowStockProducts(results);
+    }
+  };
+
+  calculateLowStock();
+
+  return () => {
+    cancelled = true;
+  };
+}, [products, batches]);
 
   const handleSell = async (product) => {
     const qty = Math.max(
@@ -548,13 +604,6 @@ const sale = {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockCrops = products.filter(p => {
-    const ready = availableQuantityForCrop(batches, p._id);
-    const alertInfo = getStockAlertStatus(p, ready);
-    return alertInfo.status === "low_stock" || alertInfo.status === "out_of_stock";
-  });
-
-
   const upcomingReadyBatches = batches
     .filter(batch => batch.status !== "ready")
     .map(batch => {
@@ -602,27 +651,31 @@ const sale = {
   });
   const customerCredits = Object.values(customerCreditMap).sort((a, b) => b.totalOwed - a.totalOwed);
   const grandCreditTotal = customerCredits.reduce((s, c) => s + c.totalOwed, 0);
+   const [showLowStockModal, setShowLowStockModal] = useState(false);
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Top Banner Alert if low stock crops exist */}
-      <div>
-        <div className="font-bold text-sm">
-          Stock Level Alert ({lowStockCrops.length} Crops)
-        </div>
-
-        <div className="text-xs text-amber-800">
-          {lowStockCrops.slice(0, 4).map(c => c.name).join(", ")}
-          {lowStockCrops.length > 4
-            ? ` and ${lowStockCrops.length - 4} others`
-            : ""}{" "}
-          are running low or out of ready stock!
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Col 1: POS Catalog (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
+          {/* Low Stock Preview Card on Top of Cart */}
+        {lowStockProducts.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <div className="font-bold text-xs text-amber-900">Low Stock Alert</div>
+                <div className="text-[11px] text-amber-700">{lowStockProducts.length} crops running low</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLowStockModal(true)}
+              className="btn-warning text-xs px-2.5 py-1"
+            >
+              View List
+            </button>
+          </div>
+        )}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-3">
             <span className="text-slate-400">🔍</span>
             <input
@@ -1002,7 +1055,7 @@ const available = availableBatches.reduce(
                 <span>📋 Customer Debts</span>
                 <span className="badge-warning">KES {grandCreditTotal.toLocaleString()}</span>
               </h2>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-[350px] overflow-y-auto">
                 {customerCredits.map(customer => (
                   <div key={customer.name} className="bg-white border border-amber-200 rounded-xl p-3 text-xs space-y-1">
                     <div className="font-bold text-slate-900 flex justify-between">
@@ -1025,6 +1078,67 @@ const available = availableBatches.reduce(
           )}
         </div>
       </div>
+      {/* Low Stock Modal Pop-up */}
+      {showLowStockModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <span>⚠️ Low Stock Crops</span>
+                <span className="badge-warning">{lowStockProducts.length} items</span>
+              </h3>
+              <button
+                onClick={() => setShowLowStockModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th className="p-2">Crop Name</th>
+                    <th className="p-2">Available for Sale</th>
+                    <th className="p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {lowStockProducts.map(product => {
+  const threshold =
+    product.minStockThreshold != null
+      ? Number(product.minStockThreshold)
+      : 25;
+
+  const isOut = product.availableForSale <= 0;
+
+                    return (
+                      <tr key={product._id} className="hover:bg-slate-50 pt-1">
+                        <td className="font-semibold text-slate-900">{product.name}</td>
+                        <td
+  className={`font-bold ${
+    product.availableForSale <= 0
+      ? "text-rose-600"
+      : "text-amber-600"
+  }`}
+>
+  {product.availableForSale} units
+</td>
+                        <td className="py-0.5">
+                          <span className={isOut ? "badge-danger" : "badge-warning"}>
+                            {isOut ? "Out of Stock" : "Low Stock"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
