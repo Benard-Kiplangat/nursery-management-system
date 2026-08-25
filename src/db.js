@@ -220,6 +220,7 @@ export async function recordSpoilage({ batchId, quantityLost, reason, notes, rec
     _id: `spoilage:${batch._id}:${Date.now()}:${Math.floor(Math.random() * 1000)}`,
     type: "spoilage",
     batchId: batch._id,
+    batchName: batch.batchName,
     cropId: batch.cropId,
     cropName: batch.cropName,
     quantityLost: qty,
@@ -284,7 +285,7 @@ export async function deleteSupplier(supplier) {
 export function getStockAlertStatus(crop, availableQty) {
   const threshold = crop.minStockThreshold !== undefined ? Number(crop.minStockThreshold) : 25;
   if (availableQty <= 0) return { status: "out_of_stock", label: "Out of Stock", level: 0 };
-  if (availableQty <= threshold) return { status: "low_stock", label: `Low Stock (<= ${threshold})`, level: 1 };
+  if (availableQty <= threshold) return { status: "low_stock", label: `Low Stock`, level: 1 };
   return { status: "ok", label: "Stock OK", level: 2 };
 }
 

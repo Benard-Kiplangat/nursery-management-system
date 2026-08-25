@@ -63,8 +63,6 @@ useEffect(() => {
     setAvailableBatchesByCrop({});
   }
 
-  console.log("Available batches updated:", availableBatchesByCrop[products[0]?._id]);
-
   return () => {
     cancelled = true;
   };
@@ -739,15 +737,15 @@ const available = availableBatches.reduce(
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="font-bold text-slate-900 text-base flex items-center gap-2">
-                        <span>🌱 {product.name}</span>
+                        <span>{product.name}</span>
 
                         <span
-                          className={
+                          className={`${
                             alertInfo.status === "out_of_stock"
                               ? "badge-danger"
                               : alertInfo.status === "low_stock"
                                 ? "badge-warning"
-                                : "badge-success"
+                                : "badge-success"} sm:hidden`
                           }
                         >
                           {alertInfo.label}
@@ -795,7 +793,7 @@ const available = availableBatches.reduce(
                               <option key={batch._id} value={batch._id}>
                                 {getBatchDisplayName(batch)}
                                 {" — "}
-                                {!isBatchReady(batch) ? ` ${batch.availableForSale} available (Growing)` : `${batch.quantityRemaining} available`}
+                                {!isBatchReady(batch) ? ` ${batch.availableForSale} available (Growing)` : `${batch.availableForSale} available`}
                               </option>
                             ))
                           )}

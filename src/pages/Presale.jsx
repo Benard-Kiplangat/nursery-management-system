@@ -58,6 +58,7 @@ export default function Presale() {
     return batches.find(batch => batch._id === sale.batchId);
   };
 
+  
 const getPaymentInfo = sale => {
   const total = Number(sale.total || 0);
 
@@ -481,10 +482,10 @@ if (!confirmed) {
       {/* Status filters */}
       <div className="flex flex-wrap gap-2">
         {[
+          ["all", "All"],
           ["pending", "Pending"],
           ["completed", "Completed"],
           ["cancelled", "Cancelled"],
-          ["all", "All"],
         ].map(([value, label]) => (
           <button
             key={value}

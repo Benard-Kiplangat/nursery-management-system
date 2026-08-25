@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { db, getBatches, addBatch, markBatchReady, deleteBatch, batchStatus, isBatchReady, recordSpoilage, getSpoilageHistory, getBatchDisplayName } from "../db";
+
 import { useAuth } from "../context/AuthContext";
 
 const SPOILAGE_REASONS = [
@@ -227,7 +228,7 @@ export default function Batches() {
 
       {/* Batches List */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-slate-900">Batches Registry ({batches.length})</h2>
           <div className="flex flex-wrap gap-2">
             {["all", "growing", "ready", "sold out"].map(f => (
@@ -291,7 +292,7 @@ export default function Batches() {
                         onClick={() => handleOpenLossModal(batch)}
                         className="btn-secondary text-xs px-2.5 py-1.5 text-rose-700 hover:bg-rose-50"
                       >
-                        ⚠️ Record Spoilage
+                        Record Spoilled
                       </button>
                     )}
                     <div className="flex gap-2 ml-auto">
@@ -300,11 +301,11 @@ export default function Batches() {
                           onClick={() => handleMarkReady(batch)}
                           className="btn-warning text-xs px-2.5 py-1.5"
                         >
-                          Mark Ready Early
+                          Mark Ready
                         </button>
                       )}
                       <button onClick={() => handleDelete(batch)} className="btn-danger">
-                        Delete
+                        Delete Batch
                       </button>
                     </div>
                   </div>
@@ -325,24 +326,26 @@ export default function Batches() {
           <div className="text-sm text-slate-400 py-4">No loss or spoilage events recorded yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm w-[880px] ">
               <thead className="bg-slate-50 text-slate-600 text-xs uppercase font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Crop Variety</th>
-                  <th className="p-3">Qty Lost</th>
-                  <th className="p-3">Reason</th>
-                  <th className="p-3">Notes</th>
-                  <th className="p-3">Recorded By</th>
+                  <th className="p-3 sm:p-1 max-w-16">Date</th>
+                  <th className="p-3 sm:p-1">Crop Variety</th>
+                  <th className="p-3 sm:p-1">Batch</th>
+                  <th className="p-3 sm:p-1">Qty Lost</th>
+                  <th className="p-3 sm:p-1">Reason</th>
+                  <th className="p-3 sm:p-1">Notes</th>
+                  <th className="p-3 sm:p-1">Recorded By</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {spoilageLogs.map(log => (
                   <tr key={log._id} className="hover:bg-slate-50">
-                    <td className="p-3 text-slate-500 text-xs">{new Date(log.date).toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-slate-900">{log.cropName}</td>
-                    <td className="p-3 font-bold text-rose-600">-{log.quantityLost} units</td>
-                    <td className="p-3">
+                    <td className="p-3 sm:p-1 max-w-16 text-slate-500 text-xs">{new Date(log.date).toLocaleString()}</td>
+                    <td className="p-3 sm:p-1 max-w-16 font-semibold text-slate-900">{log.cropName}</td>
+                    <td className="p-3 sm:p-1 max-w-16 font-semibold text-slate-900">{log.batchName}</td>
+                    <td className="p-3 sm:p-1 max-w-16 font-bold text-rose-600">{log.quantityLost} units</td>
+                    <td className="p-3 sm:p-1">
                       <span className="badge-warning">{log.reason}</span>
                     </td>
                     <td className="p-3 text-slate-600 text-xs">{log.notes || "—"}</td>

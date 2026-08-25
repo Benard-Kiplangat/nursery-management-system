@@ -245,11 +245,11 @@ export default function SaleList({
                   )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {sale.isPresale? "Ordered on" : "Sold at"}
+                  {sale.isPresale? "Ordered at" : "Sold at"}
                   <span className="px-1">
-                    {new Date(sale.timestamp).toLocaleString('en-US', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                    {new Date(sale.timestamp).toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
-                  for Ksh. {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " with a deposit of " + sale.dwnPayment : " with no down payment" : ""}
+                  for {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " shillings with a deposit of Ksh." + sale.dwnPayment : " shillings with no down payment" : ""}
                 </div>
                 {sale.customerName && (
                   <div className="text-sm text-yellow-700 font-medium mt-0.5">
