@@ -36,73 +36,73 @@ export default function POS() {
   const [lowStockProducts, setLowStockProducts] = useState([]);
 
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  const loadAvailableBatches = async () => {
-    const result = {};
+    const loadAvailableBatches = async () => {
+      const result = {};
 
-    for (const product of products) {
-      const availableBatches =
-        await getAvailableBatchesForCrop(
-          batches,
-          product._id
-        );
+      for (const product of products) {
+        const availableBatches =
+          await getAvailableBatchesForCrop(
+            batches,
+            product._id
+          );
 
-      result[product._id] = availableBatches;
+        result[product._id] = availableBatches;
+      }
+
+      if (!cancelled) {
+        setAvailableBatchesByCrop(result);
+      }
+    };
+
+    if (products.length && batches.length) {
+      loadAvailableBatches();
+    } else {
+      setAvailableBatchesByCrop({});
     }
 
-    if (!cancelled) {
-      setAvailableBatchesByCrop(result);
-    }
-  };
-
-  if (products.length && batches.length) {
-    loadAvailableBatches();
-  } else {
-    setAvailableBatchesByCrop({});
-  }
-
-  return () => {
-    cancelled = true;
-  };
-}, [products, batches, presales]);
+    return () => {
+      cancelled = true;
+    };
+  }, [products, batches, presales]);
 
 
-useEffect(() => {
-  setSelectedBatches(prev => {
-    const next = { ...prev };
-    let changed = false;
+  useEffect(() => {
+    setSelectedBatches(prev => {
+      const next = { ...prev };
+      let changed = false;
 
-    products.forEach(product => {
-      const selectedId = next[product._id];
+      products.forEach(product => {
+        const selectedId = next[product._id];
 
-      if (!selectedId) return;
+        if (!selectedId) return;
 
-      const isPresale = presales[product._id] || false;
+        const isPresale = presales[product._id] || false;
 
-      const validBatches = isPresale
-        ? batches.filter(
+        const validBatches = isPresale
+          ? batches.filter(
             b =>
               b.cropId === product._id &&
               Number(b.quantityRemaining || 0) > 0
           )
-        : batches.filter(
+          : batches.filter(
             b =>
               b.cropId === product._id &&
               isBatchReady(b) &&
               Number(b.quantityRemaining || 0) > 0
           );
 
-      if (!validBatches.some(b => b._id === selectedId)) {
-        delete next[product._id];
-        changed = true;
-      }
-    });
+        if (!validBatches.some(b => b._id === selectedId)) {
+          delete next[product._id];
+          changed = true;
+        }
+      });
 
-    return changed ? next : prev;
-  });
-}, [presales, batches, products]);
+      return changed ? next : prev;
+    });
+  }, [presales, batches, products]);
 
   const loadBatches = async () => {
     try {
@@ -218,63 +218,63 @@ useEffect(() => {
   };
 
   useEffect(() => {
-  loadProducts();
-  loadBatches();
-  loadCustomers();
-  loadOutstandingCredits();
-}, []);
+    loadProducts();
+    loadBatches();
+    loadCustomers();
+    loadOutstandingCredits();
+  }, []);
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  const calculateLowStock = async () => {
-    if (!products.length || !batches.length) {
-      setLowStockProducts([]);
-      return;
-    }
+    const calculateLowStock = async () => {
+      if (!products.length || !batches.length) {
+        setLowStockProducts([]);
+        return;
+      }
 
-    const results = [];
+      const results = [];
 
-    for (const product of products) {
-      const availableBatches =
-        await getAvailableBatchesForCrop(
-          batches,
-          product._id
+      for (const product of products) {
+        const availableBatches =
+          await getAvailableBatchesForCrop(
+            batches,
+            product._id
+          );
+
+        const available = availableBatches.reduce(
+          (sum, batch) =>
+            sum + Number(batch.availableForSale || 0),
+          0
         );
 
-      const available = availableBatches.reduce(
-        (sum, batch) =>
-          sum + Number(batch.availableForSale || 0),
-        0
-      );
+        const alertInfo = getStockAlertStatus(
+          product,
+          available
+        );
 
-      const alertInfo = getStockAlertStatus(
-        product,
-        available
-      );
-
-      if (
-        alertInfo.status === "low_stock" ||
-        alertInfo.status === "out_of_stock"
-      ) {
-        results.push({
-          ...product,
-          availableForSale: available,
-        });
+        if (
+          alertInfo.status === "low_stock" ||
+          alertInfo.status === "out_of_stock"
+        ) {
+          results.push({
+            ...product,
+            availableForSale: available,
+          });
+        }
       }
-    }
 
-    if (!cancelled) {
-      setLowStockProducts(results);
-    }
-  };
+      if (!cancelled) {
+        setLowStockProducts(results);
+      }
+    };
 
-  calculateLowStock();
+    calculateLowStock();
 
-  return () => {
-    cancelled = true;
-  };
-}, [products, batches]);
+    return () => {
+      cancelled = true;
+    };
+  }, [products, batches]);
 
   const handleSell = async (product) => {
     const qty = Math.max(
@@ -331,48 +331,48 @@ useEffect(() => {
 
     const now = new Date().toISOString();
 
-const initialPayment = Number(
-  downPayment[product._id] || 0
-);
+    const initialPayment = Number(
+      downPayment[product._id] || 0
+    );
 
 
-  const { currentUser } = localStorage.getItem("currentUserId").split(":")[1];
+    const { currentUser } = localStorage.getItem("currentUserId").split(":")[1];
 
-const sale = {
-  _id: now,
-  type: "sale",
-  name: product.name,
-  quantity: qty,
-  total,
-  sellingPrice:
-    sellingPrices[product._id] || product.price,
-  timestamp: now,
-  isCreditSale,
-  isPresale,
-  presaleStatus: isPresale ? "pending" : null,
+    const sale = {
+      _id: now,
+      type: "sale",
+      name: product.name,
+      quantity: qty,
+      total,
+      sellingPrice:
+        sellingPrices[product._id] || product.price,
+      timestamp: now,
+      isCreditSale,
+      isPresale,
+      presaleStatus: isPresale ? "pending" : null,
 
-  dwnPayment: initialPayment,
+      dwnPayment: initialPayment,
 
-  paymentHistory:
-    isPresale && initialPayment > 0
-      ? [
-          {
-            amount: initialPayment,
-            date: now,
-            recordedBy: currentUser || "Staff",
-            method: "cash",
-            note: "Initial deposit",
-          },
-        ]
-      : [],
+      paymentHistory:
+        isPresale && initialPayment > 0
+          ? [
+            {
+              amount: initialPayment,
+              date: now,
+              recordedBy: currentUser || "Staff",
+              method: "cash",
+              note: "Initial deposit",
+            },
+          ]
+          : [],
 
-  customerName: (
-    customerNames[product._id] || ""
-  ).trim(),
+      customerName: (
+        customerNames[product._id] || ""
+      ).trim(),
 
-  batchId: batch._id,
-  batchDatePlanted: batch.datePlanted,
-};
+      batchId: batch._id,
+      batchDatePlanted: batch.datePlanted,
+    };
 
     try {
       if (!isPresale) {
@@ -649,31 +649,53 @@ const sale = {
   });
   const customerCredits = Object.values(customerCreditMap).sort((a, b) => b.totalOwed - a.totalOwed);
   const grandCreditTotal = customerCredits.reduce((s, c) => s + c.totalOwed, 0);
-   const [showLowStockModal, setShowLowStockModal] = useState(false);
+  const [showLowStockModal, setShowLowStockModal] = useState(false);
 
   return (
     <div className="space-y-6 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      {/*Cart Navigation button in small devices*/}
+      <button
+        type="button"
+        onClick={() => {
+          document
+            .getElementById("pos-cart")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold"
+      >
+        Cart
+        {cart.length > 0 && (
+          <span className="bg-white text-blue-600 min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold">
+            {cart.reduce(
+              (total, item) => total + (Number(item.qty) || 0),
+              0
+            )}
+          </span>
+        )}
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Col 1: POS Catalog (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
           {/* Low Stock Preview Card on Top of Cart */}
-        {lowStockProducts.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⚠️</span>
-              <div>
-                <div className="font-bold text-xs text-amber-900">Low Stock Alert</div>
-                <div className="text-[11px] text-amber-700">{lowStockProducts.length} crops running low</div>
+          {lowStockProducts.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚠️</span>
+                <div>
+                  <div className="font-bold text-xs text-amber-900">Low Stock Alert</div>
+                  <div className="text-[11px] text-amber-700">{lowStockProducts.length} crops running low</div>
+                </div>
               </div>
+              <button
+                onClick={() => setShowLowStockModal(true)}
+                className="btn-warning text-xs px-2.5 py-1"
+              >
+                View List
+              </button>
             </div>
-            <button
-              onClick={() => setShowLowStockModal(true)}
-              className="btn-warning text-xs px-2.5 py-1"
-            >
-              View List
-            </button>
-          </div>
-        )}
+          )}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-3">
             <span className="text-slate-400">🔍</span>
             <input
@@ -694,13 +716,13 @@ const sale = {
               const price = sellingPrices[product._id] || product.price;
 
               const availableBatches =
-  availableBatchesByCrop[product._id] || [];
+                availableBatchesByCrop[product._id] || [];
 
-const available = availableBatches.reduce(
-  (sum, batch) =>
-    sum + Number(batch.availableForSale || 0),
-  0
-);
+              const available = availableBatches.reduce(
+                (sum, batch) =>
+                  sum + Number(batch.availableForSale || 0),
+                0
+              );
 
               const readyBatches = readyBatchesForCrop(
                 batches,
@@ -710,10 +732,10 @@ const available = availableBatches.reduce(
               const isPresale = presales[product._id] || false;
 
               const selectableBatches = isPresale
-  ? availableBatches
-  : availableBatches.filter(batch =>
-      isBatchReady(batch)
-    );
+                ? availableBatches
+                : availableBatches.filter(batch =>
+                  isBatchReady(batch)
+                );
 
               const chosenBatchId =
                 selectedBatches[product._id] ||
@@ -734,14 +756,13 @@ const available = availableBatches.reduce(
                   className="card-elevated p-4 space-y-3"
                 >
                   {/* Product header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex flex-col justify-between gap-2">
                     <div>
                       <div className="font-bold text-slate-900 text-base flex items-center gap-2">
                         <span>{product.name}</span>
 
                         <span
-                          className={`${
-                            alertInfo.status === "out_of_stock"
+                          className={`${alertInfo.status === "out_of_stock"
                               ? "badge-danger"
                               : alertInfo.status === "low_stock"
                                 ? "badge-warning"
@@ -767,11 +788,11 @@ const available = availableBatches.reduce(
 
                         <select
                           value={
-  selectableBatches.some(
-    batch => batch._id === selectedBatches[product._id]
-  )
-    ? selectedBatches[product._id]
-    : selectableBatches[0]?._id || ""
+                            selectableBatches.some(
+                              batch => batch._id === selectedBatches[product._id]
+                            )
+                              ? selectedBatches[product._id]
+                              : selectableBatches[0]?._id || ""
                           }
                           onChange={e =>
                             setSelectedBatches(prev => ({
@@ -792,7 +813,7 @@ const available = availableBatches.reduce(
                             selectableBatches.map(batch => (
                               <option key={batch._id} value={batch._id}>
                                 {getBatchDisplayName(batch)}
-                                {" — "}
+                                {": "}
                                 {!isBatchReady(batch) ? ` ${batch.availableForSale} available (Growing)` : `${batch.availableForSale} available`}
                               </option>
                             ))
@@ -1034,7 +1055,7 @@ const available = availableBatches.reduce(
               </div>
             </div>
           )}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div id="pos-cart" className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <Cart
               cart={cart}
               onUpdateQty={handleCartUpdateQty}
@@ -1067,7 +1088,7 @@ const available = availableBatches.reduce(
                         {e.label}: KES {e.owed}
                       </div>
                     ))}
-                    <hr/>
+                    <hr />
                     <div className="flex justify-between pt-2 text-rose-600 font-bold"><span className="pr-4">Total Owed:</span> <span>KES {customer.totalOwed}</span></div>
                   </div>
                 ))}
@@ -1104,25 +1125,24 @@ const available = availableBatches.reduce(
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {lowStockProducts.map(product => {
-  const threshold =
-    product.minStockThreshold != null
-      ? Number(product.minStockThreshold)
-      : 25;
+                    const threshold =
+                      product.minStockThreshold != null
+                        ? Number(product.minStockThreshold)
+                        : 25;
 
-  const isOut = product.availableForSale <= 0;
+                    const isOut = product.availableForSale <= 0;
 
                     return (
                       <tr key={product._id} className="hover:bg-slate-50 pt-1">
                         <td className="font-semibold text-slate-900">{product.name}</td>
                         <td
-  className={`font-bold ${
-    product.availableForSale <= 0
-      ? "text-rose-600"
-      : "text-amber-600"
-  }`}
->
-  {product.availableForSale} units
-</td>
+                          className={`font-bold ${product.availableForSale <= 0
+                              ? "text-rose-600"
+                              : "text-amber-600"
+                            }`}
+                        >
+                          {product.availableForSale} units
+                        </td>
                         <td className="py-0.5">
                           <span className={isOut ? "badge-danger" : "badge-warning"}>
                             {isOut ? "Out of Stock" : "Low Stock"}

@@ -125,7 +125,7 @@ export default function SaleList({
     <div className="flex flex-col gap-2 mt-2">
       {showCreditList && (
         <div className="mt-3 space-y-2 mb-4">
-          <h3 className="font-semibold">Credit Sales (selected date)</h3>
+          <h3 className="font-semibold">Credit Sales for the selected date.</h3>
           {sales.filter(s => s.isCreditSale).length === 0 && <div className="text-sm text-gray-600">No credit sales.</div>}
           {groupSales(sales.filter(s => s.isCreditSale)).map((entry, idx) => {
             if (entry.isBulkGroup) {

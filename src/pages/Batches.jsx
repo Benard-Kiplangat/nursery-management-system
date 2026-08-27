@@ -169,7 +169,7 @@ export default function Batches() {
         <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
           ➕ Register New Planting Batch
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Select Crop Variety</label>
             <select
@@ -326,7 +326,7 @@ export default function Batches() {
           <div className="text-sm text-slate-400 py-4">No loss or spoilage events recorded yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm w-[880px] ">
+            <table className="w-full text-left text-sm min-w-[880px] ">
               <thead className="bg-slate-50 text-slate-600 text-xs uppercase font-semibold border-b border-slate-200">
                 <tr>
                   <th className="p-3 sm:p-1 max-w-16">Date</th>
@@ -341,15 +341,13 @@ export default function Batches() {
               <tbody className="divide-y divide-slate-100">
                 {spoilageLogs.map(log => (
                   <tr key={log._id} className="hover:bg-slate-50">
-                    <td className="p-3 sm:p-1 max-w-16 text-slate-500 text-xs">{new Date(log.date).toLocaleString()}</td>
-                    <td className="p-3 sm:p-1 max-w-16 font-semibold text-slate-900">{log.cropName}</td>
-                    <td className="p-3 sm:p-1 max-w-16 font-semibold text-slate-900">{log.batchName}</td>
-                    <td className="p-3 sm:p-1 max-w-16 font-bold text-rose-600">{log.quantityLost} units</td>
-                    <td className="p-3 sm:p-1">
-                      <span className="badge-warning">{log.reason}</span>
-                    </td>
-                    <td className="p-3 text-slate-600 text-xs">{log.notes || "—"}</td>
-                    <td className="p-3 text-slate-500 text-xs">{log.recordedBy}</td>
+                    <td className="p-1 max-w-16 text-slate-500 text-xs">{new Date(log.date).toLocaleDateString()}</td>
+                    <td className="p-1 max-w-16 text-slate-900">{log.cropName}</td>
+                    <td className="p-1 max-w-16 text-slate-900">{log.batchName}</td>
+                    <td className="p-1 max-w-16 font-semibold text-rose-600">{log.quantityLost}</td>
+                    <td className="p-1 text-xs text-slate-600">{log.reason}</td>
+                    <td className="p-1 text-slate-600 text-xs">{log.notes || "—"}</td>
+                    <td className="p-1 text-slate-500 text-xs">{log.recordedBy}</td>
                   </tr>
                 ))}
               </tbody>

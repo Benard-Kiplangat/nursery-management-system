@@ -100,7 +100,7 @@ export default function Crops() {
   return (
     <div className="space-y-6 pb-20">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             🌱 Crop Catalog & Inventory Rules
@@ -197,9 +197,9 @@ export default function Crops() {
 
       {/* Catalog List */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4">
           <h2 className="text-lg font-bold text-slate-900">Crop Variety Catalog ({crops.length})</h2>
-          <div className="w-full sm:w-72">
+          <div className="w-full">
             <input
               type="text"
               placeholder="🔍 Search crops..."
