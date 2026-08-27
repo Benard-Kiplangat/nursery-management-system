@@ -23,7 +23,7 @@ export default function Sales() {
   const [editingSale, setEditingSale] = useState(null);
   const [showCreditList, setShowCreditList] = useState(false);
   const [cropSummaries, setCropSummaries] = useState({});
-  const [summary, setSummary] = useState({ cashReceived: 0, totalRevenue: 0, cashAtHand: 0, totalCreditSales: 0});
+  const [summary, setSummary] = useState({ cashReceived: 0, totalRevenue: 0, totalCreditSales: 0});
   const [viewMode, setViewMode] = useState("todaySales");
   const [groupedSummaries, setGroupedSummaries] = useState({});
   const [selectedSales, setSelectedSales] = useState([]);
@@ -159,8 +159,7 @@ const totalPurchases = filteredPurchases.reduce(
   0
 );
 
-const cashAtHand = cashReceived - totalPurchases;
-    setSummary({ cashReceived, totalRevenue, totalCreditSales, cashAtHand });
+    setSummary({ cashReceived, totalRevenue, totalCreditSales });
   };
 
   const handleDeleteSale = async (sale) => {
@@ -300,29 +299,21 @@ const cashAtHand = cashReceived - totalPurchases;
       {viewMode === "todaySales" && (
         <div>
           <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="grid grid-cols-2 gap-1">
+                      <div className="grid grid-cols-3 gap-1">
                         <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
                           <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Sales</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">KES {formatWhole(summary.totalRevenue).toLocaleString()}.00</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.totalRevenue).toLocaleString()}</p>
                         </div>
 
                         <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
                           <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due Sales</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-amber-600">KES {formatWhole(summary.totalCreditSales).toLocaleString()}.00</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-amber-600">Ksh {formatWhole(summary.totalCreditSales).toLocaleString()}</p>
                         </div>
 
                        <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
                           <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Revenue</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">KES {formatWhole(summary.cashReceived).toLocaleString()}.00</p>
+                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.cashReceived).toLocaleString()}</p>
                         </div>
-
-          
-                        {canViewProfit && (
-                          <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
-                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Cash At Hand</p>
-                            <p className="mt-0.5 truncate text-lg font-bold text-emerald-600">KES {formatWhole(summary.cashAtHand).toLocaleString()}.00</p>
-                          </div>
-                        )}
                       </div>
                       </div>
 

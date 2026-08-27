@@ -378,7 +378,7 @@ export default function Purchase() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Purchase Cost (KES)</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Purchase Cost (Ksh)</label>
                   <input
                     type="number"
                     min="0"
@@ -475,7 +475,7 @@ export default function Purchase() {
                       Total Spend
                     </div>
                     <div className="text-xl font-black text-emerald-900 mt-1">
-                      KES {formatCurrency(totalSpend)}
+                      Ksh {formatCurrency(totalSpend)}
                     </div>
                   </div>
 
@@ -493,7 +493,7 @@ export default function Purchase() {
                       Average Purchase
                     </div>
                     <div className="text-xl font-black text-blue-900 mt-1">
-                      KES {formatCurrency(averagePurchase)}
+                      Ksh {formatCurrency(averagePurchase)}
                     </div>
                   </div>
 
@@ -532,7 +532,7 @@ export default function Purchase() {
                                 {category}
                               </span>
                               <span className="font-semibold text-slate-800">
-                                KES {formatCurrency(amount)}
+                                Ksh {formatCurrency(amount)}
                               </span>
                             </div>
 
@@ -566,7 +566,7 @@ export default function Purchase() {
                         </span>
 
                         <span className="font-bold text-slate-900 whitespace-nowrap">
-                          KES {formatCurrency(amount)}
+                          Ksh {formatCurrency(amount)}
                         </span>
                       </div>
                     ))}
@@ -590,7 +590,7 @@ export default function Purchase() {
                         </span>
 
                         <span className="font-bold text-slate-900 whitespace-nowrap">
-                          KES {formatCurrency(amount)}
+                          Ksh {formatCurrency(amount)}
                         </span>
                       </div>
                     ))}
@@ -623,7 +623,7 @@ export default function Purchase() {
                       <div className="flex items-center gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 justify-between">
                         <div className="text-right">
                           <div className="text-xs text-slate-500"></div>
-                          <div className="text-base font-bold text-emerald-800">KES {formatCurrency(p.totalCost)}</div>
+                          <div className="text-base font-bold text-emerald-800">Ksh {formatCurrency(p.totalCost)}</div>
                         </div>
                         <button onClick={() => handleDelete(p)} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-xs font-semibold">
                           Delete

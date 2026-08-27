@@ -109,7 +109,7 @@ const handleSale = () => {
           </div>
 
           <div className="border-t pt-2 space-y-1">
-            <div className="text-sm font-bold">Total: KES {cartTotal}</div>
+            <div className="text-sm font-bold">Total: Ksh {cartTotal}</div>
           </div>
 
           <div className="border rounded p-2 bg-white space-y-2">
@@ -136,7 +136,7 @@ const handleSale = () => {
 
               {dwnPayment > 0 && (
                 <div className="text-xs text-red-600 font-medium">
-                  Owes after payment: KES {Math.max(0, amountOwed)}
+                  Owes after payment: Ksh {Math.max(0, amountOwed)}
                 </div>
               )}
               <label className="flex items-center gap-2 cursor-pointer">

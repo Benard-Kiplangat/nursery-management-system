@@ -99,7 +99,7 @@ const handleAddPayment = async (
 
   if (paymentAmount > paymentInfo.balance) {
     alert(
-      `Payment cannot exceed the outstanding balance of KES ${paymentInfo.balance}.`
+      `Payment cannot exceed the outstanding balance of Ksh ${paymentInfo.balance}.`
     );
     return;
   }
@@ -293,7 +293,7 @@ const batch = String(
 
 if (payment.balance > 0) {
   const collectPayment = window.confirm(
-    `Outstanding balance: KES ${payment.balance}\n\n` +
+    `Outstanding balance: Ksh ${payment.balance}\n\n` +
     `Has the customer paid the remaining balance?\n\n` +
     `OK = Mark balance as paid and complete\n` +
     `Cancel = Do not complete`
@@ -474,7 +474,7 @@ if (!confirmed) {
             Outstanding
           </div>
           <div className="text-xl font-bold text-red-600">
-            KES {summary.outstanding}
+            Ksh {summary.outstanding}
           </div>
         </div>
       </div>
@@ -585,7 +585,7 @@ if (!confirmed) {
 
                   <div className="text-right text-sm">
                     <div className="font-bold">
-                      KES {Number(sale.total || 0)}
+                      Ksh {Number(sale.total || 0)}
                     </div>
 
                     <div className="text-xs text-gray-500">
@@ -647,7 +647,7 @@ if (!confirmed) {
                         Total
                       </div>
                       <div className="font-semibold">
-                        KES {payment.total}
+                        Ksh {payment.total}
                       </div>
                     </div>
 
@@ -657,7 +657,7 @@ if (!confirmed) {
     Paid
   </div>
    <div className="font-semibold text-green-600">
-      KES {payment.paid}
+      Ksh {payment.paid}
     </div>
 </div>
                     </div>
@@ -673,7 +673,7 @@ if (!confirmed) {
                             : "text-green-600"
                         }`}
                       >
-                        KES {payment.balance}
+                        Ksh {payment.balance}
                       </div>
                     </div>
                   </div>
@@ -701,7 +701,7 @@ if (!confirmed) {
       </span>
 
       <span className="font-semibold text-green-600">
-        KES {Number(entry.amount || 0).toLocaleString()}
+        Ksh {Number(entry.amount || 0).toLocaleString()}
       </span>
     </div>
   ))}

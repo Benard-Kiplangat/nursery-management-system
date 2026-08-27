@@ -55,7 +55,7 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
           )}
         </div>
          <div className="text-sm font-bold text-right">
-           <div>KES {totalAmount}</div>
+           <div>Ksh {totalAmount}</div>
          </div>
       </div>
 
@@ -65,8 +65,8 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
             {isPaid
               ? <span className="text-green-600 font-bold">PAID</span>
               : bulkDwnPayment > 0
-                ? <><span className="text-gray-600">Down: KES {bulkDwnPayment} | </span><span className="text-red-600 font-medium">Owes: KES {amountOwed}</span></>
-                : <span className="text-red-600 font-medium">Owes full: KES {totalAmount} (no down payment)</span>
+                ? <><span className="text-gray-600">Down: Ksh {bulkDwnPayment} | </span><span className="text-red-600 font-medium">Owes: Ksh {amountOwed}</span></>
+                : <span className="text-red-600 font-medium">Owes full: Ksh {totalAmount} (no down payment)</span>
             }
           </div>
           {isCreditSale && !isPaid && (
@@ -84,8 +84,8 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
         {group.items.map((sale, idx) => (
           <div key={idx} className="bg-white rounded p-2 flex justify-between items-center">
             <div>
-              <span className="font-medium text-sm">{sale.quantity} × {sale.name}</span>
-              <span className="text-xs text-gray-500 ml-2">@ KES {sale.sellingPrice} = KES {sale.total}</span>
+              <span className="font-medium text-sm">{sale.quantity} {sale.name}</span>
+              <span className="text-xs text-gray-500 ml-2">@ Ksh {sale.sellingPrice} = Ksh {sale.total}</span>
             </div>
             <div className="flex gap-2 text-xs">
               <button onClick={() => handleEditSale(sale)} className="text-green-600">Edit</button>
@@ -142,11 +142,11 @@ export default function SaleList({
                         <span className="font-semibold">{entry.items[0]?.customerName || <span className="italic text-gray-400">No name</span>}</span>
                       </div>
                       {entry.items.map((s, i) => (
-                        <div key={i} className="text-sm text-gray-700">{s.quantity} × {s.name} — KES {s.total}</div>
+                        <div key={i} className="text-sm text-gray-700">{s.quantity} {s.name} — Ksh {s.total}</div>
                       ))}
                       <div className="text-sm text-gray-600 mt-1">
-                        Total: KES {bulkTotal}
-                        {bulkDwnPayment > 0 && ` | Paid: KES ${bulkDwnPayment} | Owes: KES ${amountOwed}`}
+                        Total: Ksh {bulkTotal}
+                        {bulkDwnPayment > 0 && ` | Paid: Ksh ${bulkDwnPayment} | Owes: Ksh ${amountOwed}`}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
@@ -177,8 +177,8 @@ export default function SaleList({
                     <div className="text-sm text-yellow-700 font-medium">Customer: {sale.customerName}</div>
                   )}
                   <div className="text-sm text-gray-600">
-                    Total: KES {sale.total}
-                    {sale.dwnPayment > 0 && ` | Paid: KES ${sale.dwnPayment} | Owes: KES ${sale.total - sale.dwnPayment}`}
+                    Total: Ksh {sale.total}
+                    {sale.dwnPayment > 0 && ` | Paid: Ksh ${sale.dwnPayment} | Owes: Ksh ${sale.total - sale.dwnPayment}`}
                   </div>
                   <div className="mt-1 flex gap-2">
                     <button onClick={() => handleEditSale(sale)} className="text-green-600 text-sm">Edit</button>
@@ -249,7 +249,7 @@ export default function SaleList({
                   <span className="px-1">
                     {new Date(sale.timestamp).toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
-                  for {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " shillings with a deposit of Ksh." + sale.dwnPayment : " shillings with no down payment" : ""}
+                  for {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " shillings with a deposit of Ksh." + sale.dwnPayment : " shillings with no down payment" : "shillings"}
                 </div>
                 {sale.customerName && (
                   <div className="text-sm text-yellow-700 font-medium mt-0.5">

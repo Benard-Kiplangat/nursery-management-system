@@ -32,7 +32,7 @@ function CropHistoryPanel({ cropName, allSales, onClose }) {
           <div>
             <h2 className="text-lg font-bold">{cropName}</h2>
             <p className="text-sm text-gray-500">
-              All-time: {grandQty} units · KES {grandRevenue} revenue
+              All-time: {grandQty} units · Ksh {grandRevenue} revenue
             </p>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-xl font-bold px-2">×</button>
@@ -47,7 +47,7 @@ function CropHistoryPanel({ cropName, allSales, onClose }) {
               <div className="flex justify-between items-center mb-1">
                 <span className="font-semibold text-gray-700">{date}</span>
                 <span className="text-xs text-gray-500 bg-gray-100 rounded px-2 py-0.5">
-                  {totalQty} units · KES {totalRevenue}
+                  {totalQty} units · Ksh {totalRevenue}
                 </span>
               </div>
               <div className="space-y-1 pl-2 border-l-2 border-gray-200">
@@ -62,7 +62,7 @@ function CropHistoryPanel({ cropName, allSales, onClose }) {
                     <div key={idx} className="flex justify-between items-start py-1 text-sm">
                       <div>
                         <span className="text-gray-400 text-xs mr-2">{time}</span>
-                        <span className="font-medium">{sale.quantity} × KES {sale.sellingPrice}</span>
+                        <span className="font-medium">{sale.quantity} × Ksh {sale.sellingPrice}</span>
                         {tags.map((t, ti) => (
                           <span key={ti} className={`ml-1 text-xs px-1.5 py-0.5 rounded font-medium ${t.color}`}>{t.label}</span>
                         ))}
@@ -70,13 +70,13 @@ function CropHistoryPanel({ cropName, allSales, onClose }) {
                           <span className="ml-1 text-xs text-yellow-700">({sale.customerName})</span>
                         )}
                         {sale.isCreditSale && !sale.isCreditPaid && (
-                          <span className="ml-1 text-xs text-red-500">owes KES {amountOwed}</span>
+                          <span className="ml-1 text-xs text-red-500">owes Ksh {amountOwed}</span>
                         )}
                         {sale.isCreditSale && sale.isCreditPaid && (
                           <span className="ml-1 text-xs text-green-600">paid</span>
                         )}
                       </div>
-                      <span className="text-gray-700 font-semibold ml-2 flex-shrink-0">KES {sale.total}</span>
+                      <span className="text-gray-700 font-semibold ml-2 flex-shrink-0">Ksh {sale.total}</span>
                     </div>
                   );
                 })}
@@ -158,7 +158,7 @@ export default function CropSummary({ allSales = [] }) {
             </div>
             <div className="text-sm text-gray-600 mt-1 flex gap-4">
               <span>Sold: {s.quantity}</span>
-              <span>Revenue: KES {s.revenue}</span>
+              <span>Revenue: Ksh {s.revenue}</span>
             </div>
           </button>
         ))}

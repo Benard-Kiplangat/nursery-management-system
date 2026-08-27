@@ -92,7 +92,7 @@ function CustomerHistoryPanel({
             </h2>
 
             <p className="text-sm text-gray-500">
-              All-time: {grandQty} units · KES{" "}
+              All-time: {grandQty} units · Ksh{" "}
               {grandRevenue}
             </p>
           </div>
@@ -128,7 +128,7 @@ function CustomerHistoryPanel({
                   </span>
 
                   <span className="text-xs text-gray-500 bg-gray-100 rounded px-2 py-0.5">
-                    {totalQty} units · KES{" "}
+                    {totalQty} units · Ksh{" "}
                     {totalRevenue}
                   </span>
                 </div>
@@ -195,7 +195,7 @@ function CustomerHistoryPanel({
 
                           <span className="font-medium">
                             {sale.name} ·{" "}
-                            {sale.quantity} × KES{" "}
+                            {sale.quantity} × Ksh{" "}
                             {sale.sellingPrice}
                           </span>
 
@@ -213,7 +213,7 @@ function CustomerHistoryPanel({
                           {sale.isCreditSale &&
                             !sale.isCreditPaid && (
                               <span className="ml-1 text-xs text-red-500">
-                                owes KES{" "}
+                                owes Ksh{" "}
                                 {amountOwed}
                               </span>
                             )}
@@ -228,7 +228,7 @@ function CustomerHistoryPanel({
                         </div>
 
                         <span className="text-gray-700 font-semibold ml-2 flex-shrink-0">
-                          KES {sale.total}
+                          Ksh {sale.total}
                         </span>
 
                       </div>
@@ -417,7 +417,7 @@ export default function CustomerSummary({
                 </span>
 
                 <span>
-                  Revenue: KES{" "}
+                  Revenue: Ksh{" "}
                   {summary.revenue}
                 </span>
               </div>

@@ -34,14 +34,14 @@ export default function MonthlySummary({ allSales = [], selectedDate }) {
           <div key={i} className="border p-3 rounded bg-gray-50 flex justify-between">
             <div>{r.label}</div>
             <div className="text-sm">
-              Credit Due: KES {r.creditDue} | Revenue: KES {r.totalRevenue}
+              Credit Due: Ksh {r.creditDue} | Revenue: Ksh {r.totalRevenue}
             </div>
           </div>
         ))}
         <div className="mt-3 p-3 border rounded bg-white">
           <div className="font-semibold">12-Month Totals</div>
-          <div>Total Credit Due: KES {totals.totalCreditDue}</div>
-          <div>Total Revenue: KES {totals.totalRevenue}</div>
+          <div>Total Credit Due: Ksh {totals.totalCreditDue}</div>
+          <div>Total Revenue: Ksh {totals.totalRevenue}</div>
         </div>
       </div>
     </div>

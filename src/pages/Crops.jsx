@@ -131,7 +131,7 @@ export default function Crops() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Price per Seedling (KES)</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Price per Seedling (Ksh)</label>
             <input
               name="price"
               type="number"
@@ -236,7 +236,7 @@ export default function Crops() {
                   <div className="space-y-1 text-sm text-slate-600">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Price / Unit:</span>
-                      <span className="font-semibold text-slate-900">KES {crop.price}</span>
+                      <span className="font-semibold text-slate-900">Ksh {crop.price}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Growth Duration:</span>

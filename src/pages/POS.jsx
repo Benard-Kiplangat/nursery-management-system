@@ -388,7 +388,7 @@ export default function POS() {
     loadProducts();
     loadOutstandingCredits();
     loadBatches();
-    showToast(`Sold ${qty} x ${product.name} — KES ${total}`);
+    showToast(`Sold ${qty} x ${product.name} — Ksh ${total}`);
     try { bumpPopular(product._id); } catch (e) { /* ignore */ }
     setQuantities(prev => ({ ...prev, [product._id]: 1 }));
     setCreditSales({});
@@ -595,7 +595,7 @@ export default function POS() {
     loadOutstandingCredits();
     loadBatches();
     const creditNote = isCreditSale ? ` (Credit — ${customerName})` : "";
-    showToast(`Bulk sale of ${cart.length} items — KES ${totalAmount} complete${creditNote}`);
+    showToast(`Bulk sale of ${cart.length} items — Ksh ${totalAmount} complete${creditNote}`);
   };
 
   const filteredProducts = products.filter(p =>
@@ -774,7 +774,7 @@ export default function POS() {
                       </div>
 
                       <div className="text-xs text-slate-500 mt-0.5">
-                        Base Price: KES {product.price} · Maturity:{" "}
+                        Base Price: Ksh {product.price} · Maturity:{" "}
                         {product.daysToReady} days
                       </div>
                     </div>
@@ -983,7 +983,7 @@ export default function POS() {
                         disabled={selectableBatches.length === 0}
                         className="btn-primary text-xs py-1.5 px-3"
                       >
-                        Quick Sell (KES {total})
+                        Quick Sell (Ksh {total})
                       </button>
 
                       <button
@@ -1072,7 +1072,7 @@ export default function POS() {
             <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-3">
               <h2 className="text-base font-bold text-amber-900 flex items-center justify-between">
                 <span>📋 Customer Debts</span>
-                <span className="badge-warning">KES {grandCreditTotal.toLocaleString()}</span>
+                <span className="badge-warning">Ksh {grandCreditTotal.toLocaleString()}</span>
               </h2>
               <div className="space-y-2 max-h-[350px] overflow-y-auto">
                 {customerCredits.map(customer => (
@@ -1085,11 +1085,11 @@ export default function POS() {
                     </div>
                     {customer.entries.map((e, i) => (
                       <div key={i} className="text-slate-500">
-                        {e.label}: KES {e.owed}
+                        {e.label}: Ksh {e.owed}
                       </div>
                     ))}
                     <hr />
-                    <div className="flex justify-between pt-2 text-rose-600 font-bold"><span className="pr-4">Total Owed:</span> <span>KES {customer.totalOwed}</span></div>
+                    <div className="flex justify-between pt-2 text-rose-600 font-bold"><span className="pr-4">Total Owed:</span> <span>Ksh {customer.totalOwed}</span></div>
                   </div>
                 ))}
               </div>

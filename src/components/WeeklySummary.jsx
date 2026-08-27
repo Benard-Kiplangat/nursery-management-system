@@ -53,15 +53,15 @@ export default function WeeklySummary({ allSales = [], selectedDate }) {
             <div className="text-sm text-right">
               {r.totalSales === 0
                 ? <span className="italic">No sales</span>
-                : <>Credit Due: KES {r.creditDue} | Revenue: KES {r.totalRevenue}</>
+                : <>Credit Due: Ksh {r.creditDue} | Revenue: Ksh {r.totalRevenue}</>
               }
             </div>
           </div>
         ))}
         <div className="mt-3 p-3 border rounded bg-yellow-50">
           <div className="font-semibold mb-1">Week Totals</div>
-          <div>Total Credit Due: KES {totals.totalCreditDue}</div>
-          <div>Total Revenue: KES {totals.totalRevenue}</div>
+          <div>Total Credit Due: Ksh {totals.totalCreditDue}</div>
+          <div>Total Revenue: Ksh {totals.totalRevenue}</div>
         </div>
       </div>
     </div>
