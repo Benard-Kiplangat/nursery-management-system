@@ -1,5 +1,32 @@
-import React from "react";
-import { generateReceipt } from "../utils/generateReceipt";
+import React, {useState } from "react";
+import { generateETIMSReceipt } from "../utils/generateReceipt";
+
+const invoiceData = {
+  shopName: "Cheres Farm Ltd",
+  shopPin: "P051234567M",
+  shopAddress: "Kirinyaga Road, Nairobi",
+  shopTel: "+254 711 555 888",
+  invoiceNo: "ETI001234/2026",
+  cuInvoiceNo: "0001234567",
+  date: "",
+  time: "",
+  taxSummary: [{label: "VAT", rate: "16%", taxableAmount: 0, taxAmount:0}, {label: "VAT", rate: "8%", taxableAmount: 0, taxAmount:0}, {label: "Zero Rated", rate: "0%", taxableAmount: 0, taxAmount:0}, {label: "Exempted", rate: "0%", taxableAmount: 100, taxAmount:0}],
+  receiptType: "Training",
+  //buyerName: "John Kamau Garage",
+  //buyerPin: "P052987654R",
+  //buyerLocation: "Ruaraka, Nairobi",
+  /*
+  items: [
+    { name: "Toyota Fielder Brake Pads", hsCode: "8708.30.00", qty: 1, price: 3500 },
+    { name: "Oil Filter", hsCode: "8421.23.00", qty: 1, price: 800 }
+  ],
+  */
+  //subtotal: 4300,
+  //vat: 688,
+  //total: 4988,
+  //paymentMethod: "Cash - Paid",
+  qrBase64: "data:image/png;base64,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"
+};
 
 function groupSales(sales) {
   const reversed = [...sales].reverse();
@@ -40,7 +67,7 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
   const borderClass = isCreditSale ? "border-red-400 bg-red-50" : "border-purple-400 bg-purple-50";
   const badgeBg = isCreditSale ? "bg-red-600" : "bg-purple-600";
 
-  return (
+    return (
     <div className={`border-2 ${borderClass} rounded p-3`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -54,9 +81,9 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
             <span className="text-sm font-semibold text-yellow-700">Customer: {customerName}</span>
           )}
         </div>
-         <div className="text-sm font-bold text-right">
-           <div>Ksh {totalAmount}</div>
-         </div>
+        <div className="text-sm font-bold text-right">
+          <div>Ksh {totalAmount}</div>
+        </div>
       </div>
 
       {isCreditSale && (
@@ -98,7 +125,7 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
       <div className="mt-2 text-xs text-gray-500">{group.items.length} items — {totalQty} units total</div>
 
       <button
-        onClick={() => generateReceipt(group.items)}
+        onClick={() => {generateETIMSReceipt({...{items: group.items}, etims: localStorage.getItem("etimsMode") === "true", ...invoiceData})}}
         className="mt-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
       >
         Receipt
@@ -110,7 +137,6 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
 export default function SaleList({
   sales = [],
   showCreditList,
-  setShowCreditList,
   selectedSales,
   toggleSaleSelection,
   isSelected,
@@ -129,7 +155,7 @@ export default function SaleList({
           {sales.filter(s => s.isCreditSale).length === 0 && <div className="text-sm text-gray-600">No credit sales.</div>}
           {groupSales(sales.filter(s => s.isCreditSale)).map((entry, idx) => {
             if (entry.isBulkGroup) {
-                          const bulkTotal = entry.items.reduce((s, i) => s + (i.total || 0), 0);
+              const bulkTotal = entry.items.reduce((s, i) => s + (i.total || 0), 0);
               const bulkDwnPayment = entry.items[0]?.bulkDwnPayment || 0;
               const amountOwed = bulkTotal - bulkDwnPayment;
               const isPaid = entry.items[0]?.isCreditPaid || false;
@@ -153,14 +179,14 @@ export default function SaleList({
                       {isPaid
                         ? <span className="text-green-600 font-semibold text-sm">PAID</span>
                         : <>
-                            <span className="text-red-600 font-semibold text-sm">UNPAID</span>
-                            <button
-                              onClick={() => handleMarkBulkPaid(entry.items)}
-                              className="bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700 whitespace-nowrap"
-                            >
-                              Mark Paid
-                            </button>
-                          </>
+                          <span className="text-red-600 font-semibold text-sm">UNPAID</span>
+                          <button
+                            onClick={() => handleMarkBulkPaid(entry.items)}
+                            className="bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700 whitespace-nowrap"
+                          >
+                            Mark Paid
+                          </button>
+                        </>
                       }
                     </div>
                   </div>
@@ -198,7 +224,7 @@ export default function SaleList({
 
       {selectedSales.length > 0 && (
         <button
-          onClick={() => generateReceipt(selectedSales)}
+          onClick={() => generateETIMSReceipt({...{items: selectedSales}, etims: localStorage.getItem("etimsMode") === "true", ...invoiceData})}
           className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
         >
           Download Group Receipt ({selectedSales.length} items)
@@ -234,10 +260,10 @@ export default function SaleList({
                   {sale.quantity} {sale.name}
                   <span className="text-sm text-red-600 px-1">
                     {sale.isPresale && (
-  <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-    PRESALE
-  </span>
-)}
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                        PRESALE
+                      </span>
+                    )}
                     {sale.isCreditSale ? "Credit Sale" : ""}
                   </span>
                   {sale.isCreditSale && sale.isCreditPaid && (
@@ -245,9 +271,9 @@ export default function SaleList({
                   )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {sale.isPresale? "Ordered at" : "Sold at"}
+                  {sale.isPresale ? "Ordered at" : "Sold at"}
                   <span className="px-1">
-                    {new Date(sale.timestamp).toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false })}
+                    {new Date(sale.timestamp).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
                   for {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " shillings with a deposit of Ksh." + sale.dwnPayment : " shillings with no down payment" : "shillings"}
                 </div>
@@ -262,7 +288,30 @@ export default function SaleList({
                 </div>
               </div>
               <button
-                onClick={() => generateReceipt([sale])}
+                onClick={async () => {
+                  const response = await fetch('http://localhost:3000/api/etims/create-invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      invoiceNo: "ETI001235/2026",
+                      buyer: { name: sale.customerName, pin: sale?.customer?.pin || "P052987654R" },
+                      items: [
+                        sale
+                      ],
+                      paymentType: sale.paymentMethod || "05" // M-Pesa
+                    })
+                  });
+
+                  const result = await response.json();
+                  if (!result || !result.success) {
+                    generateETIMSReceipt({
+                      ...{items: [sale]},
+                      ...invoiceData,
+                      etims: localStorage.getItem("etimsMode") === "true",
+                      ...result
+                    });
+                  }
+                }}
                 className="mt-1 ml-4 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
               >
                 Receipt

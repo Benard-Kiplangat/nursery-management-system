@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../db";
-import { generateReceipt } from "../utils/generateReceipt";
 import { formatWhole } from "../utils/format";
 import WeeklySummary from "../components/WeeklySummary";
 import MonthlySummary from "../components/MonthlySummary";
@@ -23,14 +22,16 @@ export default function Sales() {
   const [editingSale, setEditingSale] = useState(null);
   const [showCreditList, setShowCreditList] = useState(false);
   const [cropSummaries, setCropSummaries] = useState({});
-  const [summary, setSummary] = useState({ cashReceived: 0, totalRevenue: 0, totalCreditSales: 0});
+  const [summary, setSummary] = useState({ cashReceived: 0, totalRevenue: 0, totalCreditSales: 0 });
   const [viewMode, setViewMode] = useState("todaySales");
-  const [groupedSummaries, setGroupedSummaries] = useState({});
   const [selectedSales, setSelectedSales] = useState([]);
   const [allSales, setAllSales] = useState([]);
   const [salesSearch, setSalesSearch] = useState("");
   const [searchRange, setSearchRange] = useState("week");
   const [purchases, setPurchases] = useState([]);
+  const [etimsMode, setEtimsMode] = useState(() => {
+    return localStorage.getItem("etimsMode") === "true";
+  });
 
   useEffect(() => {
     loadSales();
@@ -38,31 +39,31 @@ export default function Sales() {
   }, []);
 
   useEffect(() => {
-  calculateSummary(sales);
-}, [sales, purchases, selectedDate]);
+    calculateSummary(sales);
+  }, [sales, purchases, selectedDate]);
 
   const loadPurchases = async () => {
-  try {
-    const result = await db.allDocs({
-      include_docs: true,
-    });
+    try {
+      const result = await db.allDocs({
+        include_docs: true,
+      });
 
-    const purchaseDocs = result.rows
-      .map(row => row.doc)
-      .filter(
-        doc =>
-          doc &&
-          doc.type === "purchase"
+      const purchaseDocs = result.rows
+        .map(row => row.doc)
+        .filter(
+          doc =>
+            doc &&
+            doc.type === "purchase"
+        );
+
+      setPurchases(purchaseDocs);
+    } catch (error) {
+      console.error(
+        "Failed to load purchases:",
+        error
       );
-
-    setPurchases(purchaseDocs);
-  } catch (error) {
-    console.error(
-      "Failed to load purchases:",
-      error
-    );
-  }
-};
+    }
+  };
 
   const loadSales = async (dateStr) => {
     const result = await db.allDocs({ include_docs: true });
@@ -102,62 +103,61 @@ export default function Sales() {
         totalSales: acc.totalSales + sale.quantity,
         totalRevenue: acc.totalRevenue + sale.total,
         creditSales: totalCreditSales,
-      }), { totalSales: 0, totalRevenue: 0, creditSales: 0});
+      }), { totalSales: 0, totalRevenue: 0, creditSales: 0 });
       summaryByDate[date] = total;
     }
-    setGroupedSummaries(summaryByDate);
   };
 
   const calculateSummary = (salesList) => {
-const cashReceived = salesList.reduce(
-  (sum, sale) => {
-    // Presale: use actual payment history
-    if (
-      sale.isPresale &&
-      Array.isArray(sale.paymentHistory)
-    ) {
-      return (
-        sum +
-        sale.paymentHistory.reduce(
-          (paymentSum, payment) =>
-            paymentSum +
-            Number(payment.amount || 0),
-          0
-        )
-      );
-    }
+    const cashReceived = salesList.reduce(
+      (sum, sale) => {
+        // Presale: use actual payment history
+        if (
+          sale.isPresale &&
+          Array.isArray(sale.paymentHistory)
+        ) {
+          return (
+            sum +
+            sale.paymentHistory.reduce(
+              (paymentSum, payment) =>
+                paymentSum +
+                Number(payment.amount || 0),
+              0
+            )
+          );
+        }
 
-    // Credit sale: only amount actually paid
-    if (sale.isCreditSale) {
-      return (
-        sum +
-        Number(sale.dwnPayment || 0)
-      );
-    }
+        // Credit sale: only amount actually paid
+        if (sale.isCreditSale) {
+          return (
+            sum +
+            Number(sale.dwnPayment || 0)
+          );
+        }
 
-    // Normal sale: full amount is received
-    return sum + Number(sale.total || 0);
-  },
-  0
-);
+        // Normal sale: full amount is received
+        return sum + Number(sale.total || 0);
+      },
+      0
+    );
     const totalCreditSales = salesList.filter((x) => (x.isCreditSale)).reduce((sum, s) => sum + s.total, 0) - (salesList.filter((x) => x.isCreditSale).reduce((sum, s) => sum + (s.dwnPayment || 0), 0));
     const totalRevenue = (salesList.filter((x) => x).reduce((sum, s) => sum + s.total, 0));
-  
+
     const [y, m, d] = selectedDate.split('-').map(Number);
     const today = new Date(y, m - 1, d).toLocaleDateString();
 
     const filteredPurchases = purchases.filter(purchase => {
-  const date = new Date(purchase.date);
-  return (
-    date.toLocaleDateString() === today
-  );
-});
+      const date = new Date(purchase.date);
+      return (
+        date.toLocaleDateString() === today
+      );
+    });
 
-const totalPurchases = filteredPurchases.reduce(
-  (sum, purchase) =>
-    sum + Number(purchase.totalCost || 0),
-  0
-);
+    const totalPurchases = filteredPurchases.reduce(
+      (sum, purchase) =>
+        sum + Number(purchase.totalCost || 0),
+      0
+    );
 
     setSummary({ cashReceived, totalRevenue, totalCreditSales });
   };
@@ -265,7 +265,7 @@ const totalPurchases = filteredPurchases.reduce(
   })();
 
   const { canViewProfit } = useAuth();
-  
+
 
   return (
     <div className="p-4 pb-32 max-w-xl">
@@ -284,11 +284,10 @@ const totalPurchases = filteredPurchases.reduce(
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`whitespace-nowrap rounded-xl sm:border border-slate-100 border-w-6 px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                viewMode === mode
+              className={`whitespace-nowrap rounded-xl sm:border border-slate-100 border-w-6 px-3 py-2 text-sm font-medium transition-all duration-200 ${viewMode === mode
                   ? "bg-slate-900 text-white"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:shadow-sm"
-              }`}
+                }`}
             >
               {label}
             </button>
@@ -299,94 +298,108 @@ const totalPurchases = filteredPurchases.reduce(
       {viewMode === "todaySales" && (
         <div>
           <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="grid grid-cols-3 gap-1">
-                        <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Sales</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.totalRevenue).toLocaleString()}</p>
-                        </div>
+            <div className="grid grid-cols-3 gap-1">
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Sales</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.totalRevenue).toLocaleString()}</p>
+              </div>
 
-                        <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due Sales</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-amber-600">Ksh {formatWhole(summary.totalCreditSales).toLocaleString()}</p>
-                        </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due Sales</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-amber-600">Ksh {formatWhole(summary.totalCreditSales).toLocaleString()}</p>
+              </div>
 
-                       <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Revenue</p>
-                          <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.cashReceived).toLocaleString()}</p>
-                        </div>
-                      </div>
-                      </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Revenue</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.cashReceived).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
 
-          
+
           <div className="flex flex-col rounded-2xl mb-2 border border-slate-200 bg-white p-2 shadow-sm">
-                                  <div className="flex items-center justify-between">
-                                    <button
-                          onClick={() => setShowCreditList(prev => !prev)}
-                          className={`inline-flex items-center rounded-lg border ml-4 px-4 py-2 text-sm font-medium transition ${
-                            showCreditList
-                              ? "border-orange-300 bg-orange-50 text-orange-800"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                          }`}
-                        >
-                          {showCreditList ? "Hide" : "Show"} Credit Sales
-                        </button>
-                        <div className="">
-                          <span className="text-sm sm:hidden font-semibold text-slate-700">Sales date: </span>              
-                        <input
-                          className="rounded-lg sm:mx-4 py-1.5 my-1 border ml-2 border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          type="date"
-                          name="datePick"
-                          id="datePick"
-                          value={selectedDate}
-                          onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }}
-                        />
-                        </div>
-                      </div>
-                      </div>
-          
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Search by product or customer..."
-                          className="min-w-[75px] flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                          value={salesSearch}
-                          onChange={e => setSalesSearch(e.target.value)}
-                        />
-                        <select
-                          value={searchRange}
-                          onChange={e => setSearchRange(e.target.value)}
-                          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                        >
-                          <option value="week">Past 7 days</option>
-                          <option value="month">Past 30 days</option>
-                          <option value="all">All time</option>
-                        </select>
-                      </div>
-                      {salesSearch.trim() && (
-                        <div className="text-xs text-gray-500 mb-2">
-                          {filteredSales.length} result{filteredSales.length !== 1 ? "s" : ""} found
-                        </div>
-                      )}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowCreditList(prev => !prev)}
+                className={`inline-flex items-center rounded-lg border ml-4 px-4 py-2 text-sm font-medium transition ${showCreditList
+                    ? "border-orange-300 bg-orange-50 text-orange-800"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+              >
+                {showCreditList ? "Hide" : "Show"} Credit Sales
+              </button>
+              <div className="flex sm:flex-col items-center gap-1">
+                <label className="flex items-center gap-1 cursor-pointer text-sm text-slate-700 pl-2">
+                  <input
+                    type="checkbox"
+                    checked={etimsMode}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setEtimsMode(enabled);
+                      localStorage.setItem("etimsMode", String(enabled));
+                    }}
+                  />
 
-            <SaleList
-              sales={filteredSales}
-              showCreditList={showCreditList}
-              setShowCreditList={setShowCreditList}
-              selectedSales={selectedSales}
-              toggleSaleSelection={toggleSaleSelection}
-              isSelected={isSelected}
-              handleEditSale={handleEditSale}
-              handleDeleteSale={handleDeleteSale}
-              handleDeleteSaleWithStockRestore={handleDeleteSaleWithStockRestore}
-              handleMarkBulkPaid={handleMarkBulkPaid}
-            />
+                  eTIMS
+                </label>
+              </div>
+              <div className="">
+                <span className="text-sm sm:hidden font-semibold text-slate-700">Sales date: </span>
+                <input
+                  className="rounded-lg sm:mx-4 py-1.5 my-1 border ml-2 border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  type="date"
+                  name="datePick"
+                  id="datePick"
+                  value={selectedDate}
+                  onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }}
+                />
+              </div>
+            </div>
+          </div>
 
-            <EditSaleModal
-              editingSale={editingSale}
-              handleEditChange={handleEditChange}
-              handleSaveEdit={handleSaveEdit}
-              handleCancelEdit={handleCancelEdit}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search by product or customer..."
+              className="min-w-[75px] flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+              value={salesSearch}
+              onChange={e => setSalesSearch(e.target.value)}
             />
+            <select
+              value={searchRange}
+              onChange={e => setSearchRange(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+            >
+              <option value="week">Past 7 days</option>
+              <option value="month">Past 30 days</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+          {salesSearch.trim() && (
+            <div className="text-xs text-gray-500 mb-2">
+              {filteredSales.length} result{filteredSales.length !== 1 ? "s" : ""} found
+            </div>
+          )}
+
+          <SaleList
+            sales={filteredSales}
+            showCreditList={showCreditList}
+            setShowCreditList={setShowCreditList}
+            selectedSales={selectedSales}
+            toggleSaleSelection={toggleSaleSelection}
+            isSelected={isSelected}
+            handleEditSale={handleEditSale}
+            handleDeleteSale={handleDeleteSale}
+            handleDeleteSaleWithStockRestore={handleDeleteSaleWithStockRestore}
+            handleMarkBulkPaid={handleMarkBulkPaid}
+          />
+
+          <EditSaleModal
+            editingSale={editingSale}
+            handleEditChange={handleEditChange}
+            handleSaveEdit={handleSaveEdit}
+            handleCancelEdit={handleCancelEdit}
+          />
         </div>
       )}
 

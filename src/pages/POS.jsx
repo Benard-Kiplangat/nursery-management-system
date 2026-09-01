@@ -521,7 +521,7 @@ export default function POS() {
 
   const handleCartClear = () => setCart([]);
 
-  const handleCartSale = async ({ isCreditSale = false, isPresale = false, customerName = "", dwnPayment = 0 } = {}) => {
+  const handleCartSale = async ({ isCreditSale = false, isPresale = false, customerName = "", dwnPayment = 0, paymentMethod = "cash", mpesaPayment = null } = {}) => {
     if (cart.length === 0) return;
 
     if ((isCreditSale || isPresale) && !customerName) {
@@ -548,6 +548,8 @@ export default function POS() {
     }
 
     const bulkSaleId = new Date().toISOString();
+    const isMpesa = paymentMethod === "mpesa";
+    const salesToPut = [];
 
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
@@ -565,13 +567,21 @@ export default function POS() {
         isCreditSale,
         isPresale: item.isPresale,
         presaleStatus: item.isPresale ? "pending" : null,
-        customerName: customerName.trim() || " ",
+        customerName: customerName.trim() || "Walk-in Customer",
         dwnPayment: 0,
-        bulkDwnPayment: isCreditSale ? Number(dwnPayment) : 0,
+        bulkDwnPayment: isCreditSale ? Number(dwnPayment) + (isMpesa ? Number(mpesaPayment.amount) : 0) : 0,
         isBulkSale: true,
         bulkSaleId,
         batchId: item.batch._id,
         batchDatePlanted: item.batch.datePlanted,
+        paymentMethod,
+        mpesaAmountPaid: isMpesa ? Number(mpesaPayment.amount) : 0,
+        mpesaPhone: isMpesa ? mpesaPayment.phone : null,
+        mpesaTransactionId: isMpesa ? mpesaPayment.transactionId : null,
+        mpesaCheckoutRequestId: isMpesa ? mpesaPayment.checkoutRequestId : "",
+        mpesaMerchantRequestId: isMpesa ? mpesaPayment.merchantRequestId : "",
+        mpesaSaleStatus: Boolean(isMpesa && mpesaPayment.transactionId) ? "completed" : "pending",
+        createdAt: new Date().toISOString()
       };
 
       try {
@@ -584,10 +594,20 @@ export default function POS() {
         return;
       }
 
-      await db.put(sale);
+      console.log(sale);
+      salesToPut.push(sale);
+      console.log(salesToPut)
 
       try { bumpPopular(product._id); } catch (e) { /* ignore */ }
     }
+
+const bulkTotal = salesToPut.reduce((sum, item) => sum + item.total, 0);
+
+for (let i = 0; i < salesToPut.length; i++) {
+  salesToPut[i].bulkTotal = bulkTotal; 
+  console.log("u:", salesToPut[i]); 
+  await db.put(salesToPut[i])
+}
 
     const totalAmount = cart.reduce((sum, item) => sum + item.qty * item.sellingPrice, 0);
     setCart([]);
@@ -1064,6 +1084,7 @@ export default function POS() {
               onClearCart={handleCartClear}
               onMakeSale={handleCartSale}
               customers={customers}
+              loadCustomers={loadCustomers}
             />
           </div>
 

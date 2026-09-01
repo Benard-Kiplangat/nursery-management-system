@@ -27,6 +27,18 @@ export default function CustomerFormCard({
             onChange={(e) => onChange("name", e.target.value)}
           />
         </div>
+        <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1">
+            Company KRA Pin
+        </label>
+        <input
+            type="text"
+            className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. John Doe"
+            value={form.krapin}
+            onChange={(e) => onChange("krapin", e.target.value)}
+          />
+        </div>
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>

@@ -133,6 +133,68 @@ function createSqliteDbService(appPath) {
     return { ok: true, id: doc._id, rev: doc._rev || '1-restore' };
   };
 
+  const createMpesaPayment = (payment) => {
+  const doc = {
+    _id: `mpesa:${payment.checkoutRequestId}`,
+    type: "mpesa_payment",
+
+    status: payment.status || "pending",
+
+    amount: Number(payment.amount),
+    phoneNumber: payment.phoneNumber,
+
+    merchantRequestId:
+      payment.merchantRequestId || null,
+
+    checkoutRequestId:
+      payment.checkoutRequestId,
+
+    transactionId:
+      payment.transactionId || null,
+
+    transactionDate:
+      payment.transactionDate || null,
+
+    resultCode:
+      payment.resultCode ?? null,
+
+    resultDesc:
+      payment.resultDesc || null,
+
+    createdAt:
+      payment.createdAt || new Date().toISOString(),
+
+    updatedAt:
+      new Date().toISOString()
+  };
+
+  return put(doc);
+};
+
+
+const getMpesaPayment = (checkoutRequestId) => {
+  return get(`mpesa:${checkoutRequestId}`);
+};
+
+
+const updateMpesaPayment = (
+  checkoutRequestId,
+  updates
+) => {
+
+  const doc = getMpesaPayment(checkoutRequestId);
+
+  const updatedDoc = {
+    ...doc,
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+
+  put(updatedDoc);
+
+  return updatedDoc;
+};
+
   const destroy = () => {
     sqlite.close();
     if (fs.existsSync(filePath)) {
@@ -241,7 +303,7 @@ if (!table) {
   }
 };
 
-  return { allDocs, get, put, remove, destroy, resetDb, mergeBackup, sqlite };
+  return { allDocs, get, put, remove, destroy, resetDb, mergeBackup, sqlite, createMpesaPayment, getMpesaPayment, updateMpesaPayment };
 }
 
 module.exports = { createSqliteDbService };

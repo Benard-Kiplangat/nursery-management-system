@@ -4,11 +4,13 @@
   "author": "Benard Kiplangat",
   "description": "POS application for a Farm & Nursery Farm",
   "main": "electron/main.js",
-    "scripts": {
+  "scripts": {
     "dev": "vite",
+    "server": "node server/kra-etims.js",
     "build": "vite build --outDir \"C:\\Users\\Ben\\Documents\\xsfarmpos\"",
     "preview": "vite preview",
     "electron": "electron .",
+    "axsev": "concurrently \"npm run dev\" \"npm run server\"",
     "dist": "electron-builder",
     "dev:electron": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5000 && electron .\"",
     "start:electron": "electron ."
@@ -19,6 +21,7 @@
     "@capacitor/core": "^7.2.0",
     "@vitejs/plugin-react": "^4.4.1",
     "better-sqlite3": "^13.0.2",
+    "cors": "^2.8.6",
     "events": "^3.3.0",
     "express": "^5.2.1",
     "jspdf": "^3.0.1",
@@ -42,32 +45,28 @@
     "wait-on": "^8.0.0"
   },
   "build": {
-  "appId": "com.ben.xsfarm",
-  "productName": "XS Farm & Nursery POS",
-
-  "files": [
-    "electron/**/*",
-    "node_modules/**/*",
-    "package.json"
-  ],
-
-  "directories": {
-    "output": "dist"
-  },
-
-  "win": {
-    "target": "nsis",
-    "icon": "electron/assets/icon.ico"
-  },
-
-  "nsis": {
-    "oneClick": false,
-    "perMachine": true,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "installerIcon": "electron/assets/icon.ico",
-    "uninstallerIcon": "electron/assets/icon.ico"
+    "appId": "com.ben.xsfarm",
+    "productName": "XS Farm & Nursery POS",
+    "files": [
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "electron/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "electron/assets/icon.ico",
+      "uninstallerIcon": "electron/assets/icon.ico"
+    }
   }
-}
 }

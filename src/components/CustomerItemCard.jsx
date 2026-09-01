@@ -11,6 +11,9 @@ export default function CustomerItemCard({ customer, onEdit, onDelete }) {
             {customer.name || "Unnamed Customer"}
           </h3>
           <div className="text-xs text-slate-500 font-medium flex items-center gap-2 mt-0.5 flex-wrap">
+            {customer.krapin && (
+              <span> {customer.krapin}</span>
+            )}
             {customer.phone && (
               <span>📞 {customer.phone}</span>
             )}

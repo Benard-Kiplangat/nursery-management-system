@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../db";
 
-const emptyCustomer = { name: "", phone: "", email: "", notes: "" };
+const emptyCustomer = { name: "", krapin: "", phone: "", email: "", notes: "" };
 
 export function useCustomerData() {
   const [customers, setCustomers] = useState([]);
@@ -58,6 +58,7 @@ export function useCustomerData() {
     setForm({
       name: customer.name || "",
       phone: customer.phone || "",
+      krapin: customer.krapin || "",
       email: customer.email || "",
       notes: customer.notes || "",
     });

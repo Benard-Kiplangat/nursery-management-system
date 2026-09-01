@@ -1,53 +1,1132 @@
-// utils/generateReceipt.js
-import { jsPDF } from "jspdf";
+import jsPDF from "jspdf";
 
-export function generateReceipt(sales) {
-  const doc = new jsPDF('p', 'mm', 'a5');
-  const timestamp = new Date().toLocaleString();
-  const barcode = "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"
+export const generateETIMSReceipt = (receipt) => {
+  const {
+    // -------------------------------------------------------
+    // MODE
+    // -------------------------------------------------------
+    etims,
+    items,
 
-  doc.setFontSize(16);
-  doc.text("XS Farm and Nursery Receipt", 20, 20);
+    // -------------------------------------------------------
+    // BUSINESS
+    // -------------------------------------------------------
+    shopName = "",
+    shopTradeName = "",
+    shopAddress,
+    shopTel,
+    shopPin,
 
-  doc.setFontSize(10);
-  doc.text(`Date: ${timestamp}`, 20, 30);
+    // -------------------------------------------------------
+    // TRANSACTION
+    // -------------------------------------------------------
+    invoiceNo,
+    receiptNumber,
+    receiptType = "NORMAL",
+    transactionType = "SALE",
+    receiptLabel = "NS",
 
-  doc.setFontSize(12);
-  doc.text("QTY", 20, 40);
-  doc.text("ITEM", 55, 40);
-  doc.text("AMT", 100, 40);
-  doc.text("------------------------------------------------------------------------", 20, 45);
-  doc.setFontSize(12);
+    date,
+    time,
 
-  let y = 50;
-  let total = 0;
+    // -------------------------------------------------------
+    // CUSTOMER
+    // -------------------------------------------------------
+    buyerName,
+    buyerPin,
+    buyerLocation,
 
-  sales.forEach((sale) => {
-    const qty = sale.quantity || 0;
-    const totalForSale = sale.total || 0;
-    const unitPrice = qty > 0 ? (totalForSale / qty) : totalForSale;
-    doc.text(`${qty}`, 20, y);
-    doc.text(`${sale.name} @ ${unitPrice}`, 32, y);
-    doc.text(`KES ${totalForSale}`, 100, y);
-    y += 8;
-    total += totalForSale;
+    // -------------------------------------------------------
+    // PAYMENT
+    // -------------------------------------------------------
+    paymentMethod = "",
+
+    // -------------------------------------------------------
+    // TOTALS
+    // -------------------------------------------------------
+    totalBeforeDiscount,
+    totalDiscount = 0,
+    subtotal,
+    totalTax = 0,
+    total,
+
+    // -------------------------------------------------------
+    // TAX
+    // -------------------------------------------------------
+    taxSummary = [],
+
+    // -------------------------------------------------------
+    // ITEMS
+    // -------------------------------------------------------
+    itemCount,
+
+    // -------------------------------------------------------
+    // eTIMS / SCU
+    // -------------------------------------------------------
+    cuId,
+    cuInvoiceNo,
+    cuDate = date,
+    cuTime = time,
+    internalData,
+    receiptSignature,
+    qrBase64,
+
+    // -------------------------------------------------------
+    // OPTIONAL
+    // -------------------------------------------------------
+    kraLogoBase64,
+  } = receipt;
+
+  const saleDateTime = items[0].createdAt;
+  const saleDate = saleDateTime.split("T")[0];
+  const saleTime = saleDateTime.split("T")[1].split(".")[0];
+  taxSummary[3].taxableAmount = items[0]?.bulkTotal || items[0]?.total;
+
+  /*
+   * =========================================================
+   * HELPERS
+   * =========================================================
+   */
+
+  const safe = (value, fallback = "-") => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return fallback;
+    }
+
+    return String(value);
+  };
+
+  const money = (value) => {
+    const number = Number(value || 0);
+
+    return number.toLocaleString("en-KE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  /*
+   * =========================================================
+   * ESTIMATE RECEIPT HEIGHT
+   * =========================================================
+   *
+   * Thermal receipts should ideally remain one continuous
+   * page rather than creating page 2.
+   */
+
+  const estimatedItemHeight = items.reduce(
+    (height, sale) => {
+      const description = safe(
+        sale.name,
+        "Item"
+      );
+
+      const descriptionLines = Math.max(
+        1,
+        Math.ceil(description.length / 32)
+      );
+
+      return (
+        height +
+        9 +
+        (descriptionLines - 1) * 3
+      );
+    },
+    0
+  );
+
+  const taxHeight = etims
+    ? Math.max(1, taxSummary.length) * 2
+    : 0;
+
+  const scUHeight = etims ? 25 : 0;
+
+  const typeHeight = receiptType !== "Normal" && etims ? 6 : 0;
+
+  const estimatedHeight =
+    35 +                     // Header
+    25 +                     // Receipt information
+    10 +                     // Items header
+    estimatedItemHeight +
+    35 +                     // Totals
+    taxHeight +
+    scUHeight +
+    + typeHeight +
+    (etims && qrBase64 ? 35 : 0) +
+    20;                      // Footer 
+
+  const receiptHeight = Math.max(
+    105,
+    Math.ceil(etims ? estimatedHeight - 35 : estimatedHeight - 55 )
+  );
+
+  /*
+   * =========================================================
+   * PDF
+   * =========================================================
+   */
+
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [80, receiptHeight],
   });
 
+  const PAGE_WIDTH = 80;
+  const LEFT = 3;
+  const RIGHT = 77;
+  const CENTER = PAGE_WIDTH / 2;
+
+  let y = 5;
+
+  /*
+   * =========================================================
+   * DRAWING HELPERS
+   * =========================================================
+   */
+
+  const drawLine = () => {
+    doc.line(LEFT, y, RIGHT, y);
+    y += 4;
+  };
+
+  const sectionHeading = (text) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(text, LEFT, y);
+
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+  };
+
+  /*
+   * Label/value helper.
+   *
+   * Notice the explicit space after ":".
+   *
+   * Example:
+   * PIN: P051234567A
+   */
+
+  const drawLabelValue = (
+    label,
+    value,
+    x = LEFT,
+    width = 35
+  ) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.2);
+
+    const labelText = `${label}: `;
+
+    doc.text(
+      labelText,
+      x,
+      y
+    );
+
+    const labelWidth =
+      doc.getTextWidth(labelText);
+
+    doc.setFont("helvetica", "normal");
+
+    const valueLines =
+      doc.splitTextToSize(
+        safe(value),
+        width - labelWidth
+      );
+
+    doc.text(
+      valueLines,
+      x + labelWidth,
+      y
+    );
+
+    return Math.max(
+      1,
+      valueLines.length
+    ) * 3;
+  };
+
+  /*
+   * Two-column receipt information.
+   */
+
+  const drawTwoColumnRow = (
+    leftLabel,
+    leftValue,
+    rightLabel,
+    rightValue
+  ) => {
+    const rowY = y;
+
+    const leftX = LEFT;
+    const rightX = 42;
+
+    const leftWidth = 36;
+    const rightWidth = 35;
+
+    const leftHeight = drawLabelValue(
+      leftLabel,
+      leftValue,
+      leftX,
+      leftWidth
+    );
+
+    /*
+     * Reset Y so the right column starts at exactly
+     * the same vertical position.
+     */
+    y = rowY;
+
+    const rightHeight = drawLabelValue(
+      rightLabel,
+      rightValue,
+      rightX,
+      rightWidth
+    );
+
+    y = rowY + Math.max(
+      leftHeight,
+      rightHeight
+    );
+  };
+
+  const drawRightTotal = (
+    label,
+    value,
+    bold = false
+  ) => {
+    doc.setFont(
+      "helvetica",
+      bold ? "bold" : "normal"
+    );
+
+    doc.setFontSize(
+      bold ? 8 : 6.5
+    );
+
+    doc.text(
+      `${label}:`,
+      45,
+      y
+    );
+
+    doc.text(
+      money(value),
+      RIGHT,
+      y,
+      { align: "right" }
+    );
+
+    y += bold ? 4.5 : 3.5;
+  };
+
+  /*
+   * =========================================================
+   * HEADER
+   * =========================================================
+   */
+
+  if (kraLogoBase64 && etims) {
+    try {
+      doc.addImage(
+        kraLogoBase64,
+        "PNG",
+        CENTER - 6,
+        y,
+        12,
+        10
+      );
+
+      y += 12;
+    } catch (error) {
+      console.warn(
+        "Unable to render KRA logo",
+        error
+      );
+    }
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+
+  doc.text(
+    safe(shopName, "TAXPAYER"),
+    CENTER,
+    y,
+    { align: "center" }
+  );
+
+  y += 4;
+
+  if (shopTradeName) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+
+    doc.text(
+      safe(shopTradeName),
+      CENTER,
+      y,
+      { align: "center" }
+    );
+
+    y += 3;
+  }
+
+  if (shopAddress) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+
+    const addressLines =
+      doc.splitTextToSize(
+        safe(shopAddress),
+        70
+      );
+
+    doc.text(
+      addressLines,
+      CENTER,
+      y,
+      { align: "center" }
+    );
+
+    y +=
+      addressLines.length * 2.7;
+  }
+
+  if (shopTel) {
+    doc.setFontSize(6);
+
+    doc.text(
+      `Tel: ${safe(shopTel)}`,
+      CENTER,
+      y,
+      { align: "center" }
+    );
+
+    y += 3;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.5);
+
+  doc.text(
+    `PIN: ${safe(shopPin)}`,
+    CENTER,
+    y,
+    { align: "center" }
+  );
+
+  y += 4;
+
+  drawLine();
+
+  /*
+   * =========================================================
+   * RECEIPT TITLE
+   * =========================================================
+   */
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+
+  const title =
+    transactionType === "CREDIT NOTE"
+      ? "CREDIT NOTE"
+      : "TAX INVOICE";
+
+  /*
+   * For non-eTIMS sales this is simply a receipt.
+   */
+  const receiptTitle = etims
+    ? title
+    : "RECEIPT";
+
+  doc.text(
+    receiptTitle,
+    CENTER,
+    y,
+    { align: "center" }
+  );
+
+  y += 4;
+
+  /*
+   * =========================================================
+   * COPY / TRAINING / PROFORMA
+   * =========================================================
+   */
+
+  if (
+    etims &&
+    receiptType !== "NORMAL"
+  ) {/*
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+
+    doc.text(
+      receiptType,
+      CENTER,
+      y,
+      { align: "center" }
+    );
+
+    y += 3.5;
+*/
+    doc.setFontSize(6);
+
+    doc.text(
+      "THIS IS NOT AN OFFICIAL RECEIPT",
+      CENTER,
+      y,
+      { align: "center" }
+    );
+
+    y += 4;
+  }
+
+  /*
+   * =========================================================
+   * RECEIPT INFORMATION
+   * =========================================================
+   */
+
+  sectionHeading("RECEIPT INFORMATION");
+
+  /*
+   * TWO COLUMN LAYOUT
+   *
+   * Left                      Right
+   * ------------------------------------------------
+   * Receipt No: 123           Date: 28/08/2026
+   * Receipt Type: NORMAL      Time: 14:32:10
+   * Customer: John Doe        Payment: CASH
+   * Buyer PIN: P...           Items: 3
+   */
+
+  drawTwoColumnRow(
+    "Receipt No",
+    invoiceNo || receiptNumber,
+    "Date",
+    date || saleDate
+  );
+
+  drawTwoColumnRow(
+    "Receipt Type",
+    receipt.receiptType || "NORMAL",
+    "Time",
+    time || saleTime
+  );
+
+  const paymentMd = paymentMethod || items[0].paymentMethod || "Cash - Paid";
+
+  drawTwoColumnRow(
+    "Customer",
+    buyerName || items[0].customerName || "Walk-in Customer",
+    "Payment",
+    `${paymentMd === "mpesa" ? `${paymentMd} - ${items[0]?.mpesaTransactionId}` : paymentMd}`
+  );
+
+  drawTwoColumnRow(
+    "Buyer PIN",
+    buyerPin || items[0]?.customerPin || "N/A",
+    "Items",
+    itemCount ?? items.length
+  );
+
+  if (etims) {
+    drawTwoColumnRow(
+      "Transaction",
+      transactionType,
+      "Label",
+      receiptLabel
+    );
+  }
+
+  if (buyerLocation) {
+    y += 1;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.2);
+
+    doc.text(
+      "Location: ",
+      LEFT,
+      y
+    );
+
+    const labelWidth =
+      doc.getTextWidth("Location: ");
+
+    doc.setFont("helvetica", "normal");
+
+    const locationLines =
+      doc.splitTextToSize(
+        safe(buyerLocation),
+        72 - labelWidth
+      );
+
+    doc.text(
+      locationLines,
+      LEFT + labelWidth,
+      y
+    );
+
+    y +=
+      Math.max(
+        1,
+        locationLines.length
+      ) * 3;
+  }
+
+  drawLine();
+
+  /*
+   * =========================================================
+   * ITEMS
+   * =========================================================
+   */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6);
+
+  doc.text(
+    "DESCRIPTION",
+    LEFT,
+    y
+  );
+
+  doc.text(
+    "QTY",
+    42,
+    y,
+    { align: "right" }
+  );
+
+  doc.text(
+    "PRICE",
+    58,
+    y,
+    { align: "right" }
+  );
+
+  doc.text(
+    "AMOUNT",
+    RIGHT,
+    y,
+    { align: "right" }
+  );
+
   y += 2;
-  doc.setFontSize(10);
-  doc.text(`SUBTOTAL: KES ${total}`, 20, y);
-  y += 7;
 
-  doc.setFontSize(14);
-  doc.text(`TOTAL: KES ${total}`, 20, y);
-  
-  y += 5;
-  doc.addImage(barcode, "PNG", 20, y);
+  doc.line(
+    LEFT,
+    y,
+    RIGHT,
+    y
+  );
 
-  y += 32;
+  y += 3;
 
-  doc.setFontSize(10);
-  doc.text("Thank you for your purchase!", 50, y);
+  /*
+   * ---------------------------------------------------------
+   * ITEM ROWS
+   * ---------------------------------------------------------
+   */
 
-  doc.save(`receipt-${Date.now()}.pdf`);
+  items.forEach((sale, index) => {
+    const name = safe(
+      sale.name,
+      "Item"
+    );
+
+    const quantity = Number(
+      sale.quantity ?? 0
+    );
+
+    const amount = Number(
+      sale.total ?? 0
+    );
+
+    /*
+     * Use supplied unit price when available.
+     * Don't unnecessarily reconstruct transaction values.
+     */
+    const unitPrice =
+      sale.unitPrice !== undefined
+        ? Number(sale.sellingPrice)
+        : quantity > 0
+          ? amount / quantity
+          : 0;
+
+    /*
+     * Description
+     */
+    const descriptionLines =
+      doc.splitTextToSize(
+        name,
+        36
+      );
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+
+    doc.text(
+      `${index + 1}. ${descriptionLines[0]}`,
+      LEFT,
+      y
+    );
+
+    y += 3;
+
+    for (
+      let i = 1;
+      i < descriptionLines.length;
+      i++
+    ) {
+      doc.text(
+        descriptionLines[i],
+        LEFT + 4,
+        y
+      );
+
+      y += 3;
+    }
+
+    /*
+     * Item metadata
+     *
+     * eTIMS: show tax designation / HS code
+     * Normal receipt: don't show eTIMS tax information.
+     */
+
+    if (etims) {
+      doc.setFontSize(5.5);
+
+      const hsCode =
+        sale.hsCode || "--";
+
+      doc.text(
+        `HS Code: ${hsCode}`,
+        LEFT + 4,
+        y
+      );
+    }
+
+    /*
+     * Numbers
+     */
+
+    doc.setFontSize(6);
+
+    doc.text(
+      quantity.toFixed(2),
+      42,
+      y,
+      { align: "right" }
+    );
+
+    doc.text(
+      money(unitPrice),
+      58,
+      y,
+      { align: "right" }
+    );
+
+    doc.text(
+      money(amount),
+      RIGHT,
+      y,
+      { align: "right" }
+    );
+
+    y += 4;
+  });
+
+  drawLine();
+
+  /*
+   * =========================================================
+   * TOTALS
+   * =========================================================
+   */
+  if (
+    totalBeforeDiscount !== undefined
+  ) {
+    drawRightTotal(
+      "Subtotal Before Discount",
+      totalBeforeDiscount
+    );
+  }
+
+  if (
+    Number(totalDiscount || 0) !== 0
+  ) {
+    drawRightTotal(
+      "Discount",
+      -Math.abs(
+        Number(totalDiscount)
+      )
+    );
+  }
+
+  drawRightTotal(
+    "Subtotal",
+    subtotal || items[0]?.bulkTotal || items[0]?.total, true
+  );
+
+  etims && drawLine()
+
+  /*
+   * ---------------------------------------------------------
+   * eTIMS TAX BREAKDOWN
+   * ---------------------------------------------------------
+   *
+   * Only show tax information for eTIMS receipts.
+   */
+
+  if (
+    etims &&
+    taxSummary.length > 0
+  ) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.5);
+
+    doc.text(
+      "RATE",
+      LEFT,
+      y
+    );
+
+    doc.text(
+      "TAXABLE",
+      48,
+      y,
+      { align: "right" }
+    );
+
+    doc.text(
+      "TAX",
+      RIGHT,
+      y,
+      { align: "right" }
+    );
+
+    y += 2;
+
+    doc.line(
+      LEFT,
+      y,
+      RIGHT,
+      y
+    );
+
+    y += 3;
+
+    taxSummary.forEach((tax) => {
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      doc.text(
+        `${safe(tax.label)} ${safe(tax.rate)}`,
+        LEFT,
+        y
+      );
+
+      doc.text(
+        money(tax.taxableAmount),
+        48,
+        y,
+        { align: "right" }
+      );
+
+      doc.text(
+        money(tax.taxAmount),
+        RIGHT,
+        y,
+        { align: "right" }
+      );
+
+      y += 4;
+    });
+
+    y-=2;
+
+    etims && drawLine() && (y -= 6);
+
+    drawRightTotal(
+      "Total Tax",
+      totalTax,
+      true
+    );
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * GRAND TOTAL
+   * ---------------------------------------------------------
+   */
+
+  if (etims) {
+    drawRightTotal(
+    "Total",
+    (total || items[0]?.bulkTotal || items[0].total) + totalTax,
+    true
+  );
 }
+
+  drawRightTotal(
+    etims
+      ? "Total To Pay"
+      : "Total",
+    (total || items[0]?.bulkTotal || items[0].total) + totalTax,
+    true
+  );
+
+  /*
+   * =========================================================
+   * eTIMS SCU INFORMATION
+   * =========================================================
+   *
+   * Completely omitted for normal receipts.
+   */
+
+  if (etims) {
+    drawLine();
+
+    sectionHeading(
+      "SCU INFORMATION"
+    );
+
+    drawTwoColumnRow(
+      "Date",
+      cuDate || saleDate,
+      "Time",
+      cuTime || saleTime
+    );
+
+    drawTwoColumnRow(
+      "CU ID",
+      cuId,
+      "CU Invoice No",
+      cuInvoiceNo
+    );
+
+    /*
+     * Internal Data
+     */
+    if (internalData) {
+      y += 1;
+
+      doc.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      doc.setFontSize(6);
+
+      doc.text(
+        "Internal Data: ",
+        LEFT,
+        y
+      );
+
+      const labelWidth =
+        doc.getTextWidth(
+          "Internal Data: "
+        );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      const internalLines =
+        doc.splitTextToSize(
+          safe(internalData),
+          72 - labelWidth
+        );
+
+      doc.text(
+        internalLines,
+        LEFT + labelWidth,
+        y
+      );
+
+      y +=
+        Math.max(
+          1,
+          internalLines.length
+        ) * 2.7 + 2;
+    }
+
+    /*
+     * Receipt Signature
+     */
+    if (receiptSignature) {
+      doc.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      doc.setFontSize(6);
+
+      doc.text(
+        "Receipt Signature: ",
+        LEFT,
+        y
+      );
+
+      const labelWidth =
+        doc.getTextWidth(
+          "Receipt Signature: "
+        );
+
+      doc.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      const signatureLines =
+        doc.splitTextToSize(
+          safe(receiptSignature),
+          72 - labelWidth
+        );
+
+      doc.text(
+        signatureLines,
+        LEFT + labelWidth,
+        y
+      );
+
+      y +=
+        Math.max(
+          1,
+          signatureLines.length
+        ) * 2.7 + 2;
+    }
+
+    /*
+     * -------------------------------------------------------
+     * QR
+     * -------------------------------------------------------
+     */
+
+    if (qrBase64) {
+      y -= 2;
+
+      try {
+        const QR_SIZE = 27;
+
+        doc.addImage(
+          qrBase64,
+          "PNG",
+          CENTER - QR_SIZE / 2,
+          y,
+          QR_SIZE,
+          QR_SIZE
+        );
+
+        y += QR_SIZE + 2;
+
+        doc.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        doc.setFontSize(5);
+
+        doc.text(
+          "Scan to verify this eTIMS receipt",
+          CENTER,
+          y,
+          { align: "center" }
+        );
+
+        y += 2;
+      } catch (error) {
+        console.warn(
+          "Unable to render eTIMS QR code",
+          error
+        );
+      }
+    }
+  }
+
+  /*
+   * =========================================================
+   * FOOTER
+   * =========================================================
+   */
+
+  drawLine();
+
+  doc.setFont(
+    "helvetica",
+    "bold"
+  );
+
+  doc.setFontSize(6.5);
+
+  doc.text(
+    "THANK YOU FOR YOUR BUSINESS",
+    CENTER,
+    y,
+    { align: "center" }
+  );
+
+  y += 3;
+
+  doc.setFont(
+    "helvetica",
+    "normal"
+  );
+
+  doc.setFontSize(5.5);
+
+  doc.text(
+    "We look forward to serving you again.",
+    CENTER,
+    y,
+    { align: "center" }
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * eTIMS footer reference
+   * ---------------------------------------------------------
+   */
+
+  if (etims && cuInvoiceNo) {
+    y += 4;
+
+    doc.setFontSize(5);
+
+    doc.text(
+      `CU Invoice No: ${safe(cuInvoiceNo)}`,
+      CENTER,
+      y,
+      { align: "center" }
+    );
+  }
+
+  /*
+   * =========================================================
+   * PRINT
+   * =========================================================
+   */
+
+  doc.autoPrint();
+
+  window.open(
+    doc.output("bloburl"),
+    "_blank"
+  );
+};

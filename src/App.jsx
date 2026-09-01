@@ -41,6 +41,12 @@ function AdminRoute({ children }) {
 export default function App() {
   const { currentUser } = useAuth();
 
+  const [initialized, setInitialized] = useState(
+    localStorage.getItem("initialized") === "true"
+  );  
+  const [license, setLicense] = useState("");
+
+
   const today = new Date();
   let exp = localStorage.getItem("exp");
 
@@ -57,12 +63,6 @@ export default function App() {
   if (exp < today) {
     localStorage.setItem("initialized", "false")
   }
-
-  const [initialized, setInitialized] = useState(
-    localStorage.getItem("initialized") === "true"
-  );
-
-  const [license, setLicense] = useState("");
 
   if (!initialized) {
     // Ask for license
@@ -87,7 +87,7 @@ export default function App() {
     const days = Number(license.trim().substring(8)) || 33;
     const d = new Date();
     d.setDate(d.getDate() + days);
-    if (license.trim() === getLicenseCode()) {
+    if (license.trim().substring(0,8) === getLicenseCode()) {
       console.log(getLicenseCode())
       localStorage.setItem("initialized", "true");
       localStorage.setItem("exp", d);
