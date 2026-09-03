@@ -1,0 +1,12 @@
+{
+  "businessCode": "YL",
+  "businessName": "Yeli Farm",
+  "businessTel": "+254700000000",
+  "businessDisplayName": "Yeli Farm Nursery",
+  "appName": "Yeli Farm & Nursery POS",
+  "systemName": "Yeli Nursery Management System",
+  "kraPin": "A123456789B",
+  "address": "Bomet-Nairobi Highway",
+  "transactionDescription": "Yeli Farm POS payment",
+  "currency": "KES"
+}

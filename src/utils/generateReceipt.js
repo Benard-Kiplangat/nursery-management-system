@@ -6,28 +6,25 @@ export const generateETIMSReceipt = (receipt) => {
     // MODE
     // -------------------------------------------------------
     etims,
-    items,
 
     // -------------------------------------------------------
     // BUSINESS
     // -------------------------------------------------------
-    shopName = "",
-    shopTradeName = "",
+    shopName="Yeli Farm and Nursery",
+    shopTradeName,
     shopAddress,
-    shopTel,
     shopPin,
+    shopTel,
 
     // -------------------------------------------------------
     // TRANSACTION
     // -------------------------------------------------------
     invoiceNo,
+    kraInvoiceNumber,
     receiptNumber,
-    receiptType = "NORMAL",
+    receiptType = "TRAINING",
     transactionType = "SALE",
-    receiptLabel = "NS",
-
-    date,
-    time,
+    receiptLabel = "TS",
 
     // -------------------------------------------------------
     // CUSTOMER
@@ -44,29 +41,31 @@ export const generateETIMSReceipt = (receipt) => {
     // -------------------------------------------------------
     // TOTALS
     // -------------------------------------------------------
-    totalBeforeDiscount,
+    totalBeforeDiscount = 0,
     totalDiscount = 0,
-    subtotal,
+    subtotal = 0,
     totalTax = 0,
-    total,
+    total = 0,
+    totalTaxableAmount = 0,
 
     // -------------------------------------------------------
     // TAX
     // -------------------------------------------------------
-    taxSummary = [],
 
     // -------------------------------------------------------
     // ITEMS
     // -------------------------------------------------------
     itemCount,
+    items,
+    timestamp,
 
     // -------------------------------------------------------
     // eTIMS / SCU
     // -------------------------------------------------------
-    cuId,
     cuInvoiceNo,
-    cuDate = date,
-    cuTime = time,
+    cuDate,
+    cuTime,
+    itemCode="--",
     internalData,
     receiptSignature,
     qrBase64,
@@ -77,10 +76,32 @@ export const generateETIMSReceipt = (receipt) => {
     kraLogoBase64,
   } = receipt;
 
-  const saleDateTime = items[0].createdAt;
-  const saleDate = saleDateTime.split("T")[0];
-  const saleTime = saleDateTime.split("T")[1].split(".")[0];
-  taxSummary[3].taxableAmount = items[0]?.bulkTotal || items[0]?.total;
+  console.log(receipt)
+
+  const rawTaxSummary = receipt.taxSummary || [];
+  const taxSummary = Array.isArray(rawTaxSummary)
+    ? rawTaxSummary
+    : ["d", "b", "c", "a"].map((suffix) => {
+        const defaultLabels = {
+          d: "16% VAT",
+          b: "8% VAT",
+          c: "Zero rated",
+          a: "Exempted",
+        };
+        const rate = rawTaxSummary[`tax_rate_${suffix}`];
+        const rateLabel = rate !== undefined && rate !== null && rate !== ""
+          ? defaultLabels[suffix] : `${String(rate).replace(/%$/, "")}% VAT`;
+
+        return {
+          label: rateLabel,
+          rate: "",
+          taxableAmount: rawTaxSummary[`taxable_amount_${suffix}`] ?? 0,
+          taxAmount: rawTaxSummary[`tax_amount_${suffix}`] ?? 0,
+        };
+      });
+
+  const date = timestamp.split("T")[0];
+  const time = timestamp.split("T")[1].split(".")[0];
 
   /*
    * =========================================================
@@ -156,8 +177,8 @@ export const generateETIMSReceipt = (receipt) => {
     taxHeight +
     scUHeight +
     + typeHeight +
-    (etims && qrBase64 ? 35 : 0) +
-    20;                      // Footer 
+    (etims && qrBase64 ? 35 : 15) +
+    30;                      // Footer 
 
   const receiptHeight = Math.max(
     105,
@@ -181,7 +202,7 @@ export const generateETIMSReceipt = (receipt) => {
   const RIGHT = 77;
   const CENTER = PAGE_WIDTH / 2;
 
-  let y = 5;
+  let y = 10;
 
   /*
    * =========================================================
@@ -313,7 +334,37 @@ export const generateETIMSReceipt = (receipt) => {
 
     doc.text(
       `${label}:`,
-      45,
+      35,
+      y
+    );
+
+    doc.text(
+      money(value),
+      RIGHT,
+      y,
+      { align: "right" }
+    );
+
+    y += bold ? 4.5 : 3.5;
+  };
+
+  const drawLeftTotal = (
+    label,
+    value,
+    bold = false
+  ) => {
+    doc.setFont(
+      "helvetica",
+      bold ? "bold" : "normal"
+    );
+
+    doc.setFontSize(
+      bold ? 8 : 6.5
+    );
+
+    doc.text(
+      `${label}:`,
+      3,
       y
     );
 
@@ -357,7 +408,7 @@ export const generateETIMSReceipt = (receipt) => {
   doc.setFontSize(12);
 
   doc.text(
-    safe(shopName, "TAXPAYER"),
+    safe(shopName),
     CENTER,
     y,
     { align: "center" }
@@ -514,14 +565,14 @@ export const generateETIMSReceipt = (receipt) => {
     "Receipt No",
     invoiceNo || receiptNumber,
     "Date",
-    date || saleDate
+    date
   );
 
   drawTwoColumnRow(
     "Receipt Type",
     receipt.receiptType || "NORMAL",
     "Time",
-    time || saleTime
+    time
   );
 
   const paymentMd = paymentMethod || items[0].paymentMethod || "Cash - Paid";
@@ -603,14 +654,21 @@ export const generateETIMSReceipt = (receipt) => {
 
   doc.text(
     "QTY",
-    42,
+    39,
     y,
     { align: "right" }
   );
 
   doc.text(
     "PRICE",
-    58,
+    49,
+    y,
+    { align: "right" }
+  );
+
+   doc.text(
+    "TAXABLE",
+    64,
     y,
     { align: "right" }
   );
@@ -650,7 +708,11 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
     const amount = Number(
-      sale.total ?? 0
+      sale.total_amount ?? 0
+    );
+
+      const taxableAmount = Number(
+      sale.taxable_amount ?? 0
     );
 
     /*
@@ -659,7 +721,7 @@ export const generateETIMSReceipt = (receipt) => {
      */
     const unitPrice =
       sale.unitPrice !== undefined
-        ? Number(sale.sellingPrice)
+        ? Number(sale.unit_price)
         : quantity > 0
           ? amount / quantity
           : 0;
@@ -708,11 +770,8 @@ export const generateETIMSReceipt = (receipt) => {
     if (etims) {
       doc.setFontSize(5.5);
 
-      const hsCode =
-        sale.hsCode || "--";
-
       doc.text(
-        `HS Code: ${hsCode}`,
+        `Item Code: ${itemCode}`,
         LEFT + 4,
         y
       );
@@ -726,19 +785,26 @@ export const generateETIMSReceipt = (receipt) => {
 
     doc.text(
       quantity.toFixed(2),
-      42,
+      39,
       y,
       { align: "right" }
     );
 
     doc.text(
       money(unitPrice),
-      58,
+      49,
       y,
       { align: "right" }
     );
 
     doc.text(
+      money(taxableAmount),
+      64,
+      y,
+      { align: "right" }
+    );
+
+      doc.text(
       money(amount),
       RIGHT,
       y,
@@ -755,30 +821,37 @@ export const generateETIMSReceipt = (receipt) => {
    * TOTALS
    * =========================================================
    */
-  if (
-    totalBeforeDiscount !== undefined
+
+  y += 1;
+
+   if (
+    Number(totalDiscount || 0) !== 0
   ) {
-    drawRightTotal(
+    drawLeftTotal(
       "Subtotal Before Discount",
-      totalBeforeDiscount
+      totalBeforeDiscount,
+      true
     );
   }
 
   if (
     Number(totalDiscount || 0) !== 0
   ) {
-    drawRightTotal(
+    drawLeftTotal(
       "Discount",
       -Math.abs(
         Number(totalDiscount)
-      )
+      ),
+      true
     );
   }
 
-  drawRightTotal(
+  drawLeftTotal(
     "Subtotal",
-    subtotal || items[0]?.bulkTotal || items[0]?.total, true
+    subtotal || items.bulkTotal || items[0]?.total, true
   );
+
+y -= 1;
 
   etims && drawLine()
 
@@ -877,7 +950,7 @@ export const generateETIMSReceipt = (receipt) => {
   if (etims) {
     drawRightTotal(
     "Total",
-    (total || items[0]?.bulkTotal || items[0].total) + totalTax,
+    (total || items[0]?.bulkTotal || items[0].total),
     true
   );
 }
@@ -886,7 +959,7 @@ export const generateETIMSReceipt = (receipt) => {
     etims
       ? "Total To Pay"
       : "Total",
-    (total || items[0]?.bulkTotal || items[0].total) + totalTax,
+    (total || items[0]?.bulkTotal || items[0].total),
     true
   );
 
@@ -913,10 +986,10 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
     drawTwoColumnRow(
-      "CU ID",
-      cuId,
       "CU Invoice No",
-      cuInvoiceNo
+      cuInvoiceNo,
+      "KRA Invoice Number",
+      kraInvoiceNumber,
     );
 
     /*

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useCustomerData } from "../hooks/useCustomerData";
+import { useBusinessConfig } from "../config";
 import AddCustomerModal from "./AddCustomerModal";
 
 export default function Cart({
@@ -12,11 +13,14 @@ export default function Cart({
   customers = [],
   loadCustomers
 }) {
+  const { config } = useBusinessConfig();
   const [isCredit, setIsCredit] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [dwnPayment, setDwnPayment] = useState("");
   const [mpesaProcessing, setMpesaProcessing] = useState(false); 
   const [mpesaStatus, setMpesaStatus] = useState(null);
+  const [mpesaFailureReason, setMpesaFailureReason] = useState("");
+  const [showManualMpesa, setShowManualMpesa] = useState(false);
   const [activeMpesaPayment, setActiveMpesaPayment] = useState(null);
   const [mpesaRefreshing, setMpesaRefreshing] = useState(false);
 
@@ -60,8 +64,9 @@ const initiateMpesaPayment = async () => {
   try {
     setMpesaProcessing(true);
     setMpesaStatus("pending");
+    setMpesaFailureReason("");
 
-    let phoneNumber = phone.replace(/\D/g, "");
+    let phoneNumber = "254708374149" // phone.replace(/\D/g, "");
 
     if (phoneNumber.startsWith("0")) {
       phoneNumber = "254" + phoneNumber.substring(1);
@@ -74,7 +79,7 @@ const initiateMpesaPayment = async () => {
     }
 
     const response = await fetch(
-      "https://ee9f-196-96-57-134.ngrok-free.app/api/mpesa/stkpush",
+      `https://yelivate-apis.onrender.com/api/mpesa/stkpush?business=${config.businessCode}`,
       {
         method: "POST",
         headers: {
@@ -84,7 +89,7 @@ const initiateMpesaPayment = async () => {
           phoneNumber,
           amount,
           accountReference: `SALE-${Date.now()}`,
-          transactionDesc: "XS Farm POS payment"
+          transactionDesc: config.transactionDescription
         })
       }
     );
@@ -145,6 +150,10 @@ setMpesaDraft(prev => ({
     );
 
     setMpesaStatus("failed");
+    setMpesaFailureReason(
+      error?.message ||
+      "Payment request was rejected or timed out. Please retry."
+    );
 
     alert(
       error.message ||
@@ -159,7 +168,7 @@ setMpesaDraft(prev => ({
 const checkMpesaPaymentStatus = async (checkoutRequestId) => {
   try {
     const response = await fetch(
-      `https://ee9f-196-96-57-134.ngrok-free.app/api/mpesa/status/${checkoutRequestId}`
+      `https://yelivate-apis.onrender.com/api/mpesa/status/${checkoutRequestId}?business=${config.businessCode}`,
     );
 
     const data = await response.json();
@@ -171,8 +180,6 @@ const checkMpesaPaymentStatus = async (checkoutRequestId) => {
     }
 
     const payment = data.payment;
-
-    console.log("M-PESA status:", payment);
 
     if (payment.status === "completed") {
       setMpesaStatus("success");
@@ -193,7 +200,13 @@ const checkMpesaPaymentStatus = async (checkoutRequestId) => {
     }
 
     if (payment.status === "failed") {
+      const failureReason =
+        payment.resultDesc ||
+        payment.resultDescription ||
+        "Payment request was rejected or timed out. Please retry.";
+
       setMpesaStatus("failed");
+      setMpesaFailureReason(failureReason);
 
       setMpesaDraft(prev => ({
         ...prev,
@@ -824,7 +837,7 @@ const refreshMpesaStatus = async () => {
     }}
   >
     <div
-      className="bg-white rounded-xl shadow-xl w-full max-w-md p-5"
+      className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5"
       onClick={e => e.stopPropagation()}
     >
 
@@ -839,6 +852,7 @@ const refreshMpesaStatus = async () => {
             Pay using STK Push or enter a manual M-PESA receipt
           </p>
         </div>
+        
 
         <button
           type="button"
@@ -850,7 +864,7 @@ const refreshMpesaStatus = async () => {
         </button>
       </div>
 
-      {/* Amount due */}
+        {/* Amount due */}
       <div className="bg-slate-50 border rounded-lg p-3 mb-4">
         <div className="flex justify-between items-center">
           <span className="text-sm text-slate-500">
@@ -868,11 +882,11 @@ const refreshMpesaStatus = async () => {
       {/* ============================= */}
 
       <div className="border rounded-xl p-4 mb-4">
-
+      
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-semibold text-slate-800">
-              STK Push
+              M-Pesa Prompt
             </h3>
 
             <p className="text-xs text-slate-500">
@@ -893,9 +907,15 @@ const refreshMpesaStatus = async () => {
           )}
 
           {mpesaStatus === "failed" && (
-            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
-              Failed
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                Failed
+              </span>
+              <p className="max-w-[180px] text-right text-[10px] leading-snug text-red-600/90">
+                {mpesaFailureReason || "Payment request was rejected or timed out. Please retry."}
+              </p>
+            </div>
           )}
         </div>
 
@@ -1032,71 +1052,91 @@ const refreshMpesaStatus = async () => {
       {/* ============================= */}
 
       {mpesaStatus !== "success" && (
-        <>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-slate-200" />
-
-            <span className="text-xs text-slate-400 font-medium">
-              OR ENTER MANUALLY
-            </span>
-
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          <div className="border rounded-xl p-4">
-
-            <h3 className="font-semibold text-slate-800 mb-1">
-              Manual M-PESA Payment
-            </h3>
-
-            <p className="text-xs text-slate-500 mb-3">
-              Use this if the customer already paid or
-              the STK Push failed.
-            </p>
-
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              M-PESA Transaction ID
-            </label>
-
-            <input
-              type="text"
-              placeholder="e.g. SH12ABC34D"
-              value={mpesaDraft.transactionId}
-              disabled={mpesaProcessing}
-              onChange={e =>
-                setMpesaDraft(prev => ({
-                  ...prev,
-                  transactionId:
-                    e.target.value.toUpperCase()
-                }))
-              }
-              className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
-            />
-
-            <p className="text-[11px] text-slate-400 mt-1">
-              Enter the receipt number from the customer's
-              M-PESA confirmation message.
-            </p>
-
+        <div className="mt-4">
+          {!showManualMpesa ? (
             <button
               type="button"
-              disabled={
-                mpesaProcessing ||
-                !mpesaDraft.transactionId.trim() ||
-                !Number(mpesaDraft.amount)
-              }
-              onClick={() => {
-                saveMpesaPayment({
-                  source: "manual"
-                });
-              }}
-              className="w-full mt-3 border border-green-600 text-green-700 hover:bg-green-50 disabled:border-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed rounded-lg py-2.5 font-semibold text-sm"
+              onClick={() => setShowManualMpesa(true)}
+              className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg py-2.5 text-sm font-medium transition"
             >
-              Save Manual Payment
+              + Add manual M-PESA receipt
             </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-slate-200" />
 
-          </div>
-        </>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-medium">
+                  Manual payment
+                </span>
+
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-slate-800">
+                    Manual M-PESA Payment
+                  </h3>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowManualMpesa(false)}
+                    className="text-xs text-slate-500 hover:text-slate-700"
+                  >
+                    Hide
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-500 mb-3">
+                  Use this if the customer already paid or
+                  the STK Push failed.
+                </p>
+
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  M-PESA Transaction ID
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="e.g. SH12ABC34D"
+                  value={mpesaDraft.transactionId}
+                  disabled={mpesaProcessing}
+                  onChange={e =>
+                    setMpesaDraft(prev => ({
+                      ...prev,
+                      transactionId:
+                        e.target.value.toUpperCase()
+                    }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
+                />
+
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Enter the receipt number from the customer's
+                  M-PESA confirmation message.
+                </p>
+
+                <button
+                  type="button"
+                  disabled={
+                    mpesaProcessing ||
+                    !mpesaDraft.transactionId.trim() ||
+                    !Number(mpesaDraft.amount)
+                  }
+                  onClick={() => {
+                    saveMpesaPayment({
+                      source: "manual"
+                    });
+                  }}
+                  className="w-full mt-3 border border-green-600 text-green-700 hover:bg-green-50 disabled:border-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed rounded-lg py-2.5 font-semibold text-sm"
+                >
+                  Save Manual Payment
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {/* Footer */}

@@ -1,32 +1,200 @@
-import React, {useState } from "react";
+import React, { useState } from "react";
+import { db } from "../db";
 import { generateETIMSReceipt } from "../utils/generateReceipt";
+import { showToast } from "../utils/toast";
 
-const invoiceData = {
-  shopName: "Cheres Farm Ltd",
-  shopPin: "P051234567M",
-  shopAddress: "Kirinyaga Road, Nairobi",
-  shopTel: "+254 711 555 888",
-  invoiceNo: "ETI001234/2026",
-  cuInvoiceNo: "0001234567",
-  date: "",
-  time: "",
-  taxSummary: [{label: "VAT", rate: "16%", taxableAmount: 0, taxAmount:0}, {label: "VAT", rate: "8%", taxableAmount: 0, taxAmount:0}, {label: "Zero Rated", rate: "0%", taxableAmount: 0, taxAmount:0}, {label: "Exempted", rate: "0%", taxableAmount: 100, taxAmount:0}],
-  receiptType: "Training",
-  //buyerName: "John Kamau Garage",
-  //buyerPin: "P052987654R",
-  //buyerLocation: "Ruaraka, Nairobi",
-  /*
-  items: [
-    { name: "Toyota Fielder Brake Pads", hsCode: "8708.30.00", qty: 1, price: 3500 },
-    { name: "Oil Filter", hsCode: "8421.23.00", qty: 1, price: 800 }
-  ],
-  */
-  //subtotal: 4300,
-  //vat: 688,
-  //total: 4988,
-  //paymentMethod: "Cash - Paid",
-  qrBase64: "data:image/png;base64,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"
+const config = localStorage.getItem("businessConfig");
+const shopData = {
+  shopName: config.businessName || "Yeli Farm and Nursery",
+  shopAddress: config.address || "Bomet-Nairobi Highway",
+  shopTradeName: config.tradeName || "Leading farm in Bomet & Beyond",
+  shopTel: config.businessTel || "+254 711 555 888",
+  shopPin: config.kraPin || "P051234567M",
 };
+
+const ETIMS_API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+function getDigitaxItemId(item) {
+  return item.digitaxItemId || item.itemId || item.product?.digitaxItemId;
+}
+
+function getSaleCustomer(items) {
+  const firstItem = items[0] || {};
+  const customer = firstItem.customer || {};
+  const name = firstItem.customerName || customer.name || customer.customerName || "Walk-in Customer";
+  const pin = firstItem.customerPin || customer.pin || customer.customerTin || undefined;
+  const digitaxCustomerId = firstItem.digitaxCustomerId || customer.digitaxCustomerId || undefined;
+
+  return { name: String(name).trim() || "Walk-in Customer", pin, digitaxCustomerId };
+}
+
+function getDigitaxPaymentType(paymentMethod) {
+  if (/mpesa|m-pesa/i.test(String(paymentMethod || ""))) return "05";
+  if (/card/i.test(String(paymentMethod || ""))) return "02";
+  if (/credit/i.test(String(paymentMethod || ""))) return "04";
+  return /^\d+$/.test(String(paymentMethod || "")) ? String(paymentMethod) : "01";
+}
+
+function getNextInvoiceNumber(prefix) {
+  const counterKey = `${prefix}receipt-invoice-counter`;
+  const current = Number.parseInt(localStorage.getItem(counterKey) || "0", 10);
+  const next = Number.isFinite(current) && current >= 0 ? current + 1 : 1;
+  localStorage.setItem(counterKey, String(next));
+  return `${prefix}-${new Date().getFullYear()}-${String(next).padStart(6, "0")}`;
+}
+
+function renderLocalReceipt(items, invoiceNo) {
+
+  const customer = getSaleCustomer(items);
+  generateETIMSReceipt({
+    ...shopData,
+    items,
+    etims: false,
+    invoiceNo,
+    receiptNumber: invoiceNo,
+    buyerName: customer.name,
+    buyerPin: customer.pin,
+    paymentMethod: items[0].paymentMethod || "Cash - Paid",
+    timestamp: items[0].createdAt || items[0].timestamp || new Date().toISOString(),
+  });
+}
+
+async function getStoredETIMSReceipt(items) {
+  if (!items?.length) return null;
+
+  const savedSales = await Promise.all(
+    items.map(async (item) => {
+      if (!item?._id) return null;
+
+      try {
+        return await db.get(item._id);
+      } catch (error) {
+        return null;
+      }
+    })
+  );
+
+  const savedSale = savedSales.find((sale) => sale && sale.receiptPayload);
+  if (!savedSale) return null;
+
+  return savedSale
+}
+
+async function persistETIMSReceipt(items, receiptPayload) {
+  if (!items?.length || !receiptPayload) return;
+
+  await Promise.all(
+    items.map(async (item) => {
+      if (!item?._id) return;
+
+      try {
+        const savedSale = await db.get(item._id);
+        await db.put({
+          ...savedSale,
+          receiptPayload,
+          etimsLastUpdated: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.warn("Could not persist eTIMS receipt data for sale", item?._id, error);
+      }
+    })
+  );
+}
+
+async function generateSaleReceipt(items, etimsMode) {
+  if (!items?.length) return;
+
+  if (!etimsMode) {
+    const invoiceNo = getNextInvoiceNumber("RCT");
+    renderLocalReceipt(items, invoiceNo);
+    return;
+  }
+
+  const storedReceipt = await getStoredETIMSReceipt(items);
+
+  if (storedReceipt) {
+    console.log(storedReceipt)
+    generateETIMSReceipt({
+      ...shopData,
+      etims: true,
+      ...storedReceipt.receiptPayload
+    });
+    return;
+  }
+
+  const customer = getSaleCustomer(items);
+  const response = await fetch(`${ETIMS_API_URL}/api/etims/create-invoice`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      invoiceNo: getNextInvoiceNumber("ETI"),
+      customerId: customer.digitaxCustomerId,
+      items: items.map((item) => ({
+        ...item,
+        digitaxItemId: getDigitaxItemId(item),
+      })),
+      paymentType: getDigitaxPaymentType(items[0].paymentMethod),
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.error?.message || result?.error || "DigiTax could not create the invoice.");
+  }
+
+  const sale = result.invoice || {};
+  const totalDiscount = result.invoice.item_list.reduce((sum, item) => sum + item.discount_amount, 0);
+  const totalTaxableAmount = result.invoice.item_list.reduce((sum, item) => sum + item.taxable_amount, 0);
+  const totalTax = result.invoice.item_list.reduce((sum, item) => sum + item.tax_amount, 0);
+  const subtotal = result.invoice.item_list.reduce((sum, item) => sum + item.total_amount, 0) - totalDiscount;
+  const total = subtotal + totalTax;
+  const totalBeforeDiscount = subtotal + totalDiscount;
+  const appendedNameitems = result.invoice.item_list.map((item, index) => ({
+    ...item,
+    name: `${items[index]?.name || "Unknown"}`,
+  }));
+
+  const receiptPayload = {
+    buyerName: result.invoice.customer_name,
+    buyerPin: result.invoice.customer_tin,
+    invoiceNo: sale.trader_invoice_number || invoiceNo,
+    cuInvoiceNo: result.cuInvoiceNo,
+    timestamp: items[0].createdAt || items[0].timestamp || new Date().toISOString(),
+    cuDate: sale.date,
+    cuTime: sale.time,
+    totalBeforeDiscount,
+    totalDiscount,
+    subtotal,
+    totalTax,
+    totalTaxableAmount,
+    total,
+    itemCode: result.invoice.item_list[0].etims_item_code,
+    receiptNumber: sale.receipt_number,
+    receiptSignature: sale.receipt_signature,
+    internalData: sale.internal_data,
+    qrBase64: result.qrBase64,
+    items: appendedNameitems || [],
+    kraInvoiceNumber: result.digitaxPayload.invoice_number,
+    taxSummary: result.digitaxPayload.sales_tax_summary,
+    paymentMethod: items[0].paymentMethod || "Cash - Paid",
+  };
+
+  await persistETIMSReceipt(items, receiptPayload);
+
+  generateETIMSReceipt({
+    ...shopData,
+    items,
+    etims: true,
+    ...receiptPayload,
+  });
+}
+
+function handleReceiptClick(items, etimsMode) {
+  generateSaleReceipt(items, etimsMode).catch((error) => {
+    console.error("DigiTax receipt error", error);
+    showToast(`Could not create receipt: ${error.message}`);
+  });
+}
 
 function groupSales(sales) {
   const reversed = [...sales].reverse();
@@ -54,7 +222,7 @@ function groupSales(sales) {
   return result;
 }
 
-function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSaleWithStockRestore, handleMarkBulkPaid }) {
+function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleMarkBulkPaid, etimsMode }) {
   const totalAmount = group.items.reduce((sum, s) => sum + (s.total || 0), 0);
   const totalQty = group.items.reduce((sum, s) => sum + (s.quantity || 0), 0);
   const isCreditSale = group.items[0]?.isCreditSale || false;
@@ -67,7 +235,7 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
   const borderClass = isCreditSale ? "border-red-400 bg-red-50" : "border-purple-400 bg-purple-50";
   const badgeBg = isCreditSale ? "bg-red-600" : "bg-purple-600";
 
-    return (
+  return (
     <div className={`border-2 ${borderClass} rounded p-3`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -125,7 +293,7 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleDeleteSa
       <div className="mt-2 text-xs text-gray-500">{group.items.length} items — {totalQty} units total</div>
 
       <button
-        onClick={() => {generateETIMSReceipt({...{items: group.items}, etims: localStorage.getItem("etimsMode") === "true", ...invoiceData})}}
+        onClick={() => handleReceiptClick(group.items, etimsMode)}
         className="mt-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
       >
         Receipt
@@ -144,6 +312,7 @@ export default function SaleList({
   handleDeleteSale,
   handleDeleteSaleWithStockRestore,
   handleMarkBulkPaid,
+  etimsMode
 }) {
   const grouped = groupSales(sales);
 
@@ -224,7 +393,7 @@ export default function SaleList({
 
       {selectedSales.length > 0 && (
         <button
-          onClick={() => generateETIMSReceipt({...{items: selectedSales}, etims: localStorage.getItem("etimsMode") === "true", ...invoiceData})}
+          onClick={() => handleReceiptClick(selectedSales, etimsMode)}
           className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
         >
           Download Group Receipt ({selectedSales.length} items)
@@ -241,6 +410,7 @@ export default function SaleList({
               handleDeleteSale={handleDeleteSale}
               handleDeleteSaleWithStockRestore={handleDeleteSaleWithStockRestore}
               handleMarkBulkPaid={handleMarkBulkPaid}
+              etimsMode={etimsMode}
             />
           );
         }
@@ -288,30 +458,7 @@ export default function SaleList({
                 </div>
               </div>
               <button
-                onClick={async () => {
-                  const response = await fetch('http://localhost:3000/api/etims/create-invoice', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      invoiceNo: "ETI001235/2026",
-                      buyer: { name: sale.customerName, pin: sale?.customer?.pin || "P052987654R" },
-                      items: [
-                        sale
-                      ],
-                      paymentType: sale.paymentMethod || "05" // M-Pesa
-                    })
-                  });
-
-                  const result = await response.json();
-                  if (!result || !result.success) {
-                    generateETIMSReceipt({
-                      ...{items: [sale]},
-                      ...invoiceData,
-                      etims: localStorage.getItem("etimsMode") === "true",
-                      ...result
-                    });
-                  }
-                }}
+                onClick={() => handleReceiptClick([sale], etimsMode)}
                 className="mt-1 ml-4 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
               >
                 Receipt

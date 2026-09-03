@@ -13,10 +13,12 @@ import {
 } from "../db";
 import { showToast } from "../utils/toast";
 import Cart from "../components/Cart";
+import { useAuth } from "../context/AuthContext";
 
 
 export default function POS() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [products, setProducts] = useState([]);
   const [batches, setBatches] = useState([]);
   const [selectedBatches, setSelectedBatches] = useState({});
@@ -121,6 +123,13 @@ export default function POS() {
     } catch (e) {
       console.error('failed to load customers', e);
     }
+  };
+
+  const findCustomerByName = (name) => {
+    const normalizedName = String(name || "").trim().toLowerCase();
+    return customers.find((customer) => (
+      String(customer.name || "").trim().toLowerCase() === normalizedName
+    ));
   };
 
   useEffect(() => {
@@ -334,14 +343,14 @@ export default function POS() {
     const initialPayment = Number(
       downPayment[product._id] || 0
     );
+    const selectedCustomer = findCustomerByName(customerNames[product._id]);
 
-
-    const { currentUser } = localStorage.getItem("currentUserId").split(":")[1];
 
     const sale = {
       _id: now,
       type: "sale",
       name: product.name,
+      digitaxItemId: product.digitaxItemId || product.itemId || null,
       quantity: qty,
       total,
       sellingPrice:
@@ -359,7 +368,7 @@ export default function POS() {
             {
               amount: initialPayment,
               date: now,
-              recordedBy: currentUser || "Staff",
+              recordedBy: currentUser?.username || currentUser?.name || "Staff",
               method: "cash",
               note: "Initial deposit",
             },
@@ -369,6 +378,7 @@ export default function POS() {
       customerName: (
         customerNames[product._id] || ""
       ).trim(),
+      digitaxCustomerId: selectedCustomer?.digitaxCustomerId || null,
 
       batchId: batch._id,
       batchDatePlanted: batch.datePlanted,
@@ -555,11 +565,13 @@ export default function POS() {
       const item = cart[i];
       const product = products.find(p => p._id === item.product._id) || item.product;
       const total = item.qty * item.sellingPrice;
+      const selectedCustomer = findCustomerByName(customerName);
 
       const sale = {
         _id: `${bulkSaleId}-${i}`,
         type: "sale",
         name: product.name,
+        digitaxItemId: product.digitaxItemId || product.itemId || null,
         quantity: item.qty,
         total,
         sellingPrice: item.sellingPrice,
@@ -568,6 +580,7 @@ export default function POS() {
         isPresale: item.isPresale,
         presaleStatus: item.isPresale ? "pending" : null,
         customerName: customerName.trim() || "Walk-in Customer",
+        digitaxCustomerId: selectedCustomer?.digitaxCustomerId || null,
         dwnPayment: 0,
         bulkDwnPayment: isCreditSale ? Number(dwnPayment) + (isMpesa ? Number(mpesaPayment.amount) : 0) : 0,
         isBulkSale: true,
@@ -1181,4 +1194,3 @@ for (let i = 0; i < salesToPut.length; i++) {
     </div>
   );
 }
-

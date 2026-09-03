@@ -27,7 +27,7 @@ export default function Purchase() {
 
   // Quick Supplier Modal
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [supplierForm, setSupplierForm] = useState({ name: "", phone: "", email: "", contactPerson: "" });
+  const [supplierForm, setSupplierForm] = useState({ name: "", phone: "", email: "", contactPerson: "", krapin: "" });
 
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
@@ -74,7 +74,7 @@ export default function Purchase() {
     if (!Number.isFinite(cost) || cost < 0) {
       return alert("Total cost must be 0 or greater.");
     }
-
+    
     const supplierObj = suppliers.find(s => s._id === form.supplierId);
     const cropObj = crops.find(c => c._id === form.cropId);
 
@@ -85,6 +85,8 @@ export default function Purchase() {
       category: form.category,
       supplierId: form.supplierId || null,
       supplierName: supplierObj ? supplierObj.name : "Unspecified Supplier",
+      supplierPin: supplierObj ? supplierObj.krapin : null,
+      digitaxSupplierId: supplierObj ? supplierObj.digitaxSupplierId : null,
       cropId: form.cropId || null,
       cropName: cropObj ? cropObj.name : "General Nursery Overhead",
       quantity,
@@ -98,6 +100,21 @@ export default function Purchase() {
 
     try {
       await db.put(record);
+      /*if (form.eTIMS) {
+        const response = await fetch(`${ETIMS_API_URL}/api/etims/reverse-invoice`, {
+          method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      purchaseCount,
+      supplierId: supplierObj ? supplierObj.digitaxSupplierId : null,
+      items: items.map((item) => ({
+        ...item,
+        digitaxItemId: getDigitaxItemId(item),
+      })),
+      paymentType: getDigitaxPaymentType(items[0].paymentMethod),
+    }),
+  })
+      }*/
       setForm(emptyForm);
       await loadPurchases();
     } catch (e) {
@@ -112,7 +129,7 @@ export default function Purchase() {
       const newSupplier = await addSupplier(supplierForm);
       await loadSuppliersData();
       setForm(prev => ({ ...prev, supplierId: newSupplier._id }));
-      setSupplierForm({ name: "", phone: "", email: "", contactPerson: "" });
+      setSupplierForm({ name: "", phone: "", email: "", contactPerson: "", krapin: "" });
       setShowSupplierModal(false);
     } catch (e) {
       alert("Failed to add supplier: " + e.message);
@@ -321,7 +338,7 @@ export default function Purchase() {
                   >
                     <option value="">Choose Supplier (Optional)...</option>
                     {suppliers.map(s => (
-                      <option key={s._id} value={s._id}>{s.name} ({s.contactPerson || s.phone})</option>
+                      <option key={s._id} value={s._id}>{s.name} ({s.krapin || s.phone})</option>
                     ))}
                   </select>
                 </div>
@@ -663,7 +680,9 @@ export default function Purchase() {
                         Delete
                       </button>
                     </div>
+                    {s.name && <div className="text-slate-600">🏢 {s.name}</div>}
                     {s.contactPerson && <div className="text-slate-600">👤 {s.contactPerson}</div>}
+                    {s.krapin && <div className="text-slate-600"> {s.krapin}</div>}
                     {s.phone && <div className="text-slate-600">📞 {s.phone}</div>}
                     {s.email && <div className="text-slate-500">✉️ {s.email}</div>}
                   </div>
@@ -701,6 +720,16 @@ export default function Purchase() {
                   placeholder="e.g. Jane Doe"
                   value={supplierForm.contactPerson}
                   onChange={(e) => setSupplierForm({ ...supplierForm, contactPerson: e.target.value })}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">KRA PIN</label>
+                <input
+                  placeholder="e.g. P051234567A"
+                  value={supplierForm.krapin}
+                  onChange={(e) => setSupplierForm({ ...supplierForm, krapin: e.target.value })}
                   className="w-full p-2 border border-slate-300 rounded-lg text-sm"
                 />
               </div>

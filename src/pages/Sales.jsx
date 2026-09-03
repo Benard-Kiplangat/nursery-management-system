@@ -9,6 +9,7 @@ import CropSummary from "../components/CropSummary";
 import CustomerSummary from "../components/CustomerSummary";
 import Presale from "./Presale";
 import { useAuth } from "../context/AuthContext";
+import { useBusinessConfig } from "../config";
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -32,6 +33,8 @@ export default function Sales() {
   const [etimsMode, setEtimsMode] = useState(() => {
     return localStorage.getItem("etimsMode") === "true";
   });
+
+  const { config } = useBusinessConfig();
 
   useEffect(() => {
     loadSales();
@@ -145,19 +148,6 @@ export default function Sales() {
 
     const [y, m, d] = selectedDate.split('-').map(Number);
     const today = new Date(y, m - 1, d).toLocaleDateString();
-
-    const filteredPurchases = purchases.filter(purchase => {
-      const date = new Date(purchase.date);
-      return (
-        date.toLocaleDateString() === today
-      );
-    });
-
-    const totalPurchases = filteredPurchases.reduce(
-      (sum, purchase) =>
-        sum + Number(purchase.totalCost || 0),
-      0
-    );
 
     setSummary({ cashReceived, totalRevenue, totalCreditSales });
   };
@@ -392,6 +382,8 @@ export default function Sales() {
             handleDeleteSale={handleDeleteSale}
             handleDeleteSaleWithStockRestore={handleDeleteSaleWithStockRestore}
             handleMarkBulkPaid={handleMarkBulkPaid}
+            etimsMode={etimsMode}
+            config={config}
           />
 
           <EditSaleModal

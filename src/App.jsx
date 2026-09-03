@@ -10,16 +10,20 @@ import Customers from './pages/Customers';
 import Users from './pages/Users';
 import UserLogin from './components/UserLogin';
 import Navbar from './components/Navbar';
+import BusinessSettings from './pages/BusinessSettings';
 import { useAuth } from './context/AuthContext';
+import { useBusinessConfig } from './config';
 import './index.css';
 
 
 function RequireAuth({ children }) {
   const { currentUser, loading } = useAuth();
+  const { config } = useBusinessConfig();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh] text-slate-500 font-medium">
-        <div className="animate-spin mr-2">🌿</div> Loading XS Nursery Management System...
+        <div className="animate-spin mr-2">🌿</div> Loading {config.systemName}...
       </div>
     );
   }
@@ -40,176 +44,6 @@ function AdminRoute({ children }) {
 
 export default function App() {
   const { currentUser } = useAuth();
-
-  const [initialized, setInitialized] = useState(
-    localStorage.getItem("initialized") === "true"
-  );  
-  const [license, setLicense] = useState("");
-
-
-  const today = new Date();
-  let exp = localStorage.getItem("exp");
-
-  if (!exp) {
-    const d = new Date();
-    d.setDate(d.getDate());
-    localStorage.setItem("initialized", "true");
-    localStorage.setItem("exp", d);
-    setInitialized(true);
-  }
-
-  exp = new Date(exp);
-
-  if (exp < today) {
-    localStorage.setItem("initialized", "false")
-  }
-
-  if (!initialized) {
-    // Ask for license
-  }
-
-  if (license === getLicenseCode()) {
-    localStorage.setItem("initialized", "true");
-  }
-
-  function getLicenseCode() {
-    const date = new Date();
-
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = String(date.getFullYear());
-
-    const dateNumber = Number(`${month}${day}${year}`);
-
-    return String(dateNumber * 7);
-  }
-  function initialize() {
-    const days = Number(license.trim().substring(8)) || 33;
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    if (license.trim().substring(0,8) === getLicenseCode()) {
-      console.log(getLicenseCode())
-      localStorage.setItem("initialized", "true");
-      localStorage.setItem("exp", d);
-      setInitialized(true);
-    }
-  }
-
-  if (!initialized) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f5f7fa",
-          padding: "20px",
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "420px",
-            background: "#ffffff",
-            borderRadius: "16px",
-            padding: "40px",
-            boxSizing: "border-box",
-            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              width: "56px",
-              height: "56px",
-              margin: "0 auto 20px",
-              borderRadius: "50%",
-              background: "#fff3cd",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "26px",
-            }}
-          >
-            🔐
-          </div>
-
-          <h2
-            style={{
-              margin: "0 0 10px",
-              fontSize: "24px",
-              color: "#1f2937",
-            }}
-          >
-            Database Not Initialized
-          </h2>
-
-          <p
-            style={{
-              margin: "0 0 25px",
-              color: "#6b7280",
-              fontSize: "14px",
-              lineHeight: "1.6",
-            }}
-          >
-            Enter your license key below to initialize the database and continue.
-          </p>
-
-          <input
-            type="password"
-            value={license}
-            onChange={(e) => setLicense(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                initialize();
-              }
-            }}
-            placeholder="Enter license key"
-            style={{
-              width: "100%",
-              padding: "13px 14px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              outline: "none",
-              fontSize: "15px",
-              boxSizing: "border-box",
-              marginBottom: "12px",
-            }}
-          />
-
-          <button
-            onClick={initialize}
-            style={{
-              width: "100%",
-              padding: "13px",
-              border: "none",
-              borderRadius: "8px",
-              background: "#2563eb",
-              color: "#ffffff",
-              fontSize: "15px",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            Initialize Database
-          </button>
-
-          <p
-            style={{
-              margin: "18px 0 0",
-              fontSize: "12px",
-              color: "#9ca3af",
-            }}
-          >
-            A valid license key is required to continue.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 min-w-[420px] text-slate-800 flex flex-col lg:flex-row">
       {currentUser && <Navbar />}
@@ -223,6 +57,7 @@ export default function App() {
           <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
           <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
           <Route path="/users" element={<AdminRoute><Users /></AdminRoute>} />
+          <Route path="/settings" element={<AdminRoute><BusinessSettings /></AdminRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

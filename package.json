@@ -6,7 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
-    "server": "node server/kra-etims.js",
+    "server": "node server/main.js",
     "build": "vite build --outDir \"C:\\Users\\Ben\\Documents\\xsfarmpos\"",
     "preview": "vite preview",
     "electron": "electron .",

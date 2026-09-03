@@ -269,6 +269,8 @@ export async function addSupplier(supplierData) {
     phone: supplierData.phone?.trim() || "",
     email: supplierData.email?.trim() || "",
     contactPerson: supplierData.contactPerson?.trim() || "",
+    digitaxSupplierId: supplierData.digitaxSupplierId?.trim() || "",
+    krapin: supplierData.krapin?.trim() || "",
     address: supplierData.address?.trim() || "",
     createdAt: now,
     updatedAt: now,

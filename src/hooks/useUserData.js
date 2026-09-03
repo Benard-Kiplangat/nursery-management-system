@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../db";
+import { hashPassword, hasLegacyPlainTextPassword } from "../utils/password";
 
 const initialForm = {
   username: "",
@@ -59,6 +60,14 @@ export function useUserData() {
     }
 
     const now = new Date().toISOString();
+    let passwordFields = {};
+
+    if (form.password && form.password.trim()) {
+      passwordFields = await hashPassword(form.password.trim());
+    } else if (editingUser && hasLegacyPlainTextPassword(editingUser)) {
+      passwordFields = await hashPassword(editingUser.password);
+    }
+
     const userDoc = editingUser
       ? {
           ...editingUser,
@@ -67,19 +76,21 @@ export function useUserData() {
           role: form.role,
           canViewProfit: form.canViewProfit,
           canViewStock: form.canViewStock,
-          ...(form.password ? { password: form.password } : {}),
+          ...passwordFields,
         }
       : {
           _id: `user:${form.username.trim()}:${Date.now()}`,
           type: "user",
           username: form.username.trim(),
-          password: form.password,
           role: form.role,
           canViewProfit: form.canViewProfit,
           canViewStock: form.canViewStock,
           createdAt: now,
           updatedAt: now,
+          ...passwordFields,
         };
+
+    delete userDoc.password;
 
     setSaving(true);
     try {

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBusinessConfig } from '../config';
 
 export default function Navbar() {
   const { currentUser, isAdmin, canViewStock, logout } = useAuth();
+  const { config } = useBusinessConfig();
+  localStorage.setItem("businessConfig", config);
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -78,6 +81,17 @@ export default function Navbar() {
       ),
       show: isAdmin,
     },
+    {
+      path: '/settings',
+      label: 'Business Settings',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.05c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.05 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.05 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.05c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.05c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.05-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.05-2.573c-.94-1.543.826-3.31 2.37-2.37.996.61 2.291.13 2.573-1.05z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12h.01M12 12a2 2 0 100-4 2 2 0 000 4z" />
+        </svg>
+      ),
+      show: isAdmin,
+    }
   ];
 
   return (
@@ -86,7 +100,7 @@ export default function Navbar() {
       <div className="lg:hidden bg-emerald-900 text-white flex items-center justify-between p-4 sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-2 font-bold text-lg">
           <span className="p-1.5 bg-emerald-700 rounded-lg text-emerald-300">🌿</span>
-          <span>XS Farm & Nursery POS</span>
+          <span>{config.appName}</span>
         </div>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -115,9 +129,8 @@ export default function Navbar() {
 
       {/* Sidebar (Desktop Persistent & Mobile Drawer) */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-slate-900 text-slate-100 flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-xl shrink-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-slate-900 text-slate-100 flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-xl shrink-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <div>
           {/* Header Brand */}
@@ -127,7 +140,7 @@ export default function Navbar() {
                 <span className="text-xl">🌿</span>
               </div>
               <div>
-                <div className="font-bold text-base tracking-wide text-white leading-tight">XS Farm Nursery</div>
+                <div className="font-bold text-base tracking-wide text-white leading-tight">{config.businessDisplayName}</div>
                 <div className="text-xs text-emerald-400 font-medium">Management System</div>
               </div>
             </Link>
@@ -144,11 +157,10 @@ export default function Navbar() {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 ${
-                      isActive
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 ${isActive
                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 font-semibold'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}>
                       {item.icon}
