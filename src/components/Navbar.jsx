@@ -6,7 +6,6 @@ import { useBusinessConfig } from '../config';
 export default function Navbar() {
   const { currentUser, isAdmin, canViewStock, logout } = useAuth();
   const { config } = useBusinessConfig();
-  localStorage.setItem("businessConfig", config);
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -91,6 +90,16 @@ export default function Navbar() {
         </svg>
       ),
       show: isAdmin,
+    },
+    {
+      path: '/help',
+      label: 'User Guide',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8.5 9a3.5 3.5 0 117 0c0 2-3.5 2-3.5 4m0 5h.01M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+        </svg>
+      ),
+      show: true,
     }
   ];
 

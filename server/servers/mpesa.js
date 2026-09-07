@@ -105,7 +105,7 @@ async function getMpesaAccessToken(config = DEFAULT_MPESA_CONFIG) {
     headers: {
       Authorization: `Basic ${credentials}`,
       Accept: "application/json",
-      "User-Agent": "xsfarmpos/1.0",
+      "User-Agent": "yelipos/1.0",
     },
   });
 

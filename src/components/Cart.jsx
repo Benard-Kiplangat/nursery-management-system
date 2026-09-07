@@ -6,7 +6,7 @@ import AddCustomerModal from "./AddCustomerModal";
 export default function Cart({
   cart,
   onUpdateQty,
-  onUpdatePrice,
+  onUpdateDiscount,
   onRemoveItem,
   onClearCart,
   onMakeSale,
@@ -301,7 +301,8 @@ const refreshMpesaStatus = async () => {
     (sum, item) =>
       sum +
       item.qty *
-      (item.sellingPrice || item.product.price),
+      (item.sellingPrice || item.product.price) -
+      Number(item.discountAmount || 0),
     0
   );
 
@@ -588,32 +589,35 @@ const refreshMpesaStatus = async () => {
                     }
                   />
 
+                  <span className="text-xs text-gray-500">
+                    Ksh {Number(item.sellingPrice ?? item.product.price).toLocaleString()}
+                  </span>
+
                   <label className="text-xs text-gray-500">
-                    @
+                    Discount
                   </label>
 
                   <input
                     type="number"
+                    min="0"
+                    max={item.qty * Number(item.sellingPrice ?? item.product.price)}
                     className="border p-1 w-16 rounded text-sm"
-                    value={
-                      item.sellingPrice ??
-                      item.product.price
-                    }
+                    value={item.discountAmount ?? ""}
+                    placeholder="0"
                     onChange={e =>
-                      onUpdatePrice(
+                      onUpdateDiscount(
                         item.batch._id,
-                        parseInt(
-                          e.target.value,
-                          10
-                        ) || 0
+                        e.target.value
                       )
                     }
                   />
 
                   <span className="text-sm font-semibold">
                     ={" "}
-                    {item.qty *
-                      item.sellingPrice}
+                    {(
+                      item.qty * (item.sellingPrice || item.product.price) -
+                      Number(item.discountAmount || 0)
+                    ).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -666,6 +670,34 @@ const refreshMpesaStatus = async () => {
                     }`}
                 >
                   📱 M-PESA
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePaymentMethodChange(
+                      "bank"
+                    )
+                  }
+                  className={`border rounded p-2 text-sm font-medium ${paymentMethod === "bank"
+                      ? "bg-green-100 border-green-500 text-green-700"
+                      : "bg-white text-slate-600"
+                    }`}
+                >
+                  🏦 Bank
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePaymentMethodChange(
+                      "other"
+                    )
+                  }
+                  className={`border rounded p-2 text-sm font-medium ${paymentMethod === "other"
+                      ? "bg-green-100 border-green-500 text-green-700"
+                      : "bg-white text-slate-600"
+                    }`}
+                >
+                 💷 Other
                 </button>
               </div>
             </div>

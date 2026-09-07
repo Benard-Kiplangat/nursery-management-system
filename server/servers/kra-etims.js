@@ -8,7 +8,7 @@ const DEFAULT_BUSINESS_CODE = String(process.env.DEFAULT_BUSINESS || "default").
 const DEFAULT_DIGITAX_URL = "https://api.digitax.tech/ke/v2";
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5003,http://127.0.0.1:5003")
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5003,http://127.0.0.1:5003,https://yelivate.top")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -35,12 +35,10 @@ function getBusinessDigitaxConfig(businessCode = DEFAULT_BUSINESS_CODE) {
   const normalized = normalizeBusinessCode(businessCode);
   const prefix = getBusinessEnvPrefix(normalized);
 
-  console.log(normalized)
-
   return {
     businessCode: normalized,
     baseUrl: process.env[`${prefix}DIGITAX_BASE_URL`] || process.env.DIGITAX_BASE_URL || DEFAULT_DIGITAX_URL,
-    apiKey: process.env[`${prefix}DIGITAX_API_KEY`] || process.env.DIGITAX_API_KEY || "KEN_TEST_api_key_BO0PsocD3ghDtbzu0C4l5jm91kuCBHfc",
+    apiKey: process.env[`${prefix}DIGITAX_API_KEY`] || process.env.DIGITAX_API_KEY || "",
   };
 }
 
@@ -85,7 +83,7 @@ function mapItemToDigitax(item) {
     quantity_unit_code: String(item.quantityUnitCode || "U"),
     tax_type_code: String(item.taxTypeCode || "D"),
     default_unit_price: Number(item.defaultUnitPrice ?? item.sellingPrice ?? item.price ?? 0),
-    stock_quantity: Number(item.stockQuantity ?? item.quantity ?? 0),
+    stock_quantity: Number(item.stockQuantity ?? item.quantity ?? item.qty ?? 0),
     item_bar_code: item.itemBarCode || item.itemCode || undefined,
     levies: Array.isArray(item.levies) ? item.levies : undefined,
     callback_url: item.callbackUrl || undefined,
@@ -220,7 +218,7 @@ function createDigitaxRouter() {
         params: {
           before: req.query.before,
           after: req.query.after,
-          page_size: req.query.page_size,
+          page_size: req.query.page_size > 20 ? 20 : req.query.page_size,
         },
       });
       return res.json({ success: true, business: config.businessCode, data: response.data });
@@ -308,129 +306,10 @@ function createDigitaxRouter() {
         params: {
           before: req.query.before,
           after: req.query.after,
-          page_size: req.query.page_size,
+          page_size: req.query.page_size > 20 ? 20 : req.query.page_size,
         },
       });
 
-      router.post("/suppliers", async (req, res) => {
-        const config = req.digitaxConfig;
-        const payload = mapSupplierToDigitax(req.body || {});
-
-        if (!payload.supplier_name || !payload.supplier_tin) {
-          return res.status(400).json({
-            success: false,
-            business: config.businessCode,
-            error: "Supplier name and KRA PIN are required to register a DigiTax supplier.",
-          });
-        }
-
-        try {
-          const response = await axios.post(`${config.baseUrl}/suppliers`, payload, digitaxRequest(config));
-          return res.status(response.status || 201).json({
-            success: true,
-            business: config.businessCode,
-            supplier: response.data?.data || response.data,
-            digitaxPayload: response.data,
-          });
-        } catch (error) {
-          console.error(`DigiTax supplier error [${config.businessCode}]`, getErrorPayload(error));
-          return res.status(error.status || error.response?.status || 400).json({
-            success: false,
-            business: config.businessCode,
-            error: getErrorPayload(error),
-            digitaxPayloadSent: payload,
-          });
-        }
-      });
-
-      router.put("/suppliers/:supplierId", async (req, res) => {
-        const config = req.digitaxConfig;
-        const payload = mapSupplierToDigitax(req.body || {});
-
-        if (!req.params.supplierId || !payload.supplier_name || !payload.supplier_tin) {
-          return res.status(400).json({
-            success: false,
-            business: config.businessCode,
-            error: "Supplier ID, name and KRA PIN are required to update a DigiTax supplier.",
-          });
-        }
-
-        try {
-          const response = await axios.put(
-            `${config.baseUrl}/suppliers/${encodeURIComponent(req.params.supplierId)}`,
-            payload,
-            digitaxRequest(config)
-          );
-          return res.status(response.status || 200).json({
-            success: true,
-            business: config.businessCode,
-            supplier: response.data?.data || response.data,
-            digitaxPayload: response.data,
-          });
-        } catch (error) {
-          console.error(`DigiTax supplier update error [${config.businessCode}]`, getErrorPayload(error));
-          return res.status(error.status || error.response?.status || 400).json({
-            success: false,
-            business: config.businessCode,
-            error: getErrorPayload(error),
-            digitaxPayloadSent: payload,
-          });
-        }
-      });
-
-      router.put("/crops/:cropId", async (req, res) => {
-        const config = req.digitaxConfig;
-        const payload = mapItemToDigitax(req.body || {});
-
-        if (!req.params.cropId || !payload.item_name) {
-          return res.status(400).json({
-            success: false,
-            business: config.businessCode,
-            error: "Crop ID and name are required to update a DigiTax item.",
-          });
-        }
-
-        try {
-          const response = await axios.put(
-            `${config.baseUrl}/items/${encodeURIComponent(req.params.cropId)}`,
-            { item_name: payload.item_name, default_unit_price: payload.default_unit_price, tax_type_code: payload.tax_type_code },
-            digitaxRequest(config)
-          );
-          return res.status(response.status || 200).json({
-            success: true,
-            business: config.businessCode,
-            item: response.data?.data || response.data,
-            digitaxPayload: response.data,
-          });
-        } catch (error) {
-          console.error(`DigiTax crop update error [${config.businessCode}]`, getErrorPayload(error));
-          return res.status(error.status || error.response?.status || 400).json({
-            success: false,
-            business: config.businessCode,
-            error: getErrorPayload(error),
-            digitaxPayloadSent: payload,
-          });
-        }
-      });
-
-      router.put("/items/:itemId", async (req, res) => {
-        const config = req.digitaxConfig;
-        const payload = mapItemToDigitax(req.body || {});
-        if (!req.params.itemId || !payload.item_name) {
-          return res.status(400).json({ success: false, business: config.businessCode, error: "Item ID and name are required to update a DigiTax item." });
-        }
-        try {
-          const response = await axios.put(
-            `${config.baseUrl}/items/${encodeURIComponent(req.params.itemId)}`,
-            { item_name: payload.item_name, default_unit_price: payload.default_unit_price, tax_type_code: payload.tax_type_code },
-            digitaxRequest(config)
-          );
-          return res.status(response.status || 200).json({ success: true, business: config.businessCode, item: response.data?.data || response.data, digitaxPayload: response.data });
-        } catch (error) {
-          console.error(`DigiTax item update error [${config.businessCode}]`, getErrorPayload(error));
-          return res.status(error.status || error.response?.status || 400).json({ success: false, business: config.businessCode, error: getErrorPayload(error), digitaxPayloadSent: payload });
-        }
-      });
       return res.json({ success: true, business: config.businessCode, data: response.data });
     } catch (error) {
       console.error(`DigiTax customers error [${config.businessCode}]`, getErrorPayload(error));
@@ -439,6 +318,148 @@ function createDigitaxRouter() {
         business: config.businessCode,
         error: getErrorPayload(error),
       });
+    }
+  });
+
+  router.post("/suppliers", async (req, res) => {
+    const config = req.digitaxConfig;
+    const payload = mapSupplierToDigitax(req.body || {});
+
+    if (!payload.supplier_name || !payload.supplier_tin) {
+      return res.status(400).json({
+        success: false,
+        business: config.businessCode,
+        error: "Supplier name and KRA PIN are required to register a DigiTax supplier.",
+      });
+    }
+
+    try {
+      const response = await axios.post(`${config.baseUrl}/suppliers`, payload, digitaxRequest(config));
+      return res.status(response.status || 201).json({
+        success: true,
+        business: config.businessCode,
+        supplier: response.data?.data || response.data,
+        digitaxPayload: response.data,
+      });
+    } catch (error) {
+      console.error(`DigiTax supplier error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({
+        success: false,
+        business: config.businessCode,
+        error: getErrorPayload(error),
+        digitaxPayloadSent: payload,
+      });
+    }
+  });
+
+  router.get("/suppliers", async (req, res) => {
+    const config = req.digitaxConfig;
+    try {
+      const response = await axios.get(`${config.baseUrl}/suppliers`, {
+        ...digitaxRequest(config),
+        params: {
+          before: req.query.before,
+          after: req.query.after,
+          page_size: req.query.page_size > 20 ? 20 : req.query.page_size,
+        },
+      });
+      return res.json({ success: true, business: config.businessCode, data: response.data });
+    } catch (error) {
+      console.error(`DigiTax suppliers error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({
+        success: false,
+        business: config.businessCode,
+        error: getErrorPayload(error),
+      });
+    }
+  });
+
+  router.put("/suppliers/:supplierId", async (req, res) => {
+    const config = req.digitaxConfig;
+    const payload = mapSupplierToDigitax(req.body || {});
+
+    if (!req.params.supplierId || !payload.supplier_name || !payload.supplier_tin) {
+      return res.status(400).json({
+        success: false,
+        business: config.businessCode,
+        error: "Supplier ID, name and KRA PIN are required to update a DigiTax supplier.",
+      });
+    }
+
+    try {
+      const response = await axios.put(
+        `${config.baseUrl}/suppliers/${encodeURIComponent(req.params.supplierId)}`,
+        payload,
+        digitaxRequest(config)
+      );
+      return res.status(response.status || 200).json({
+        success: true,
+        business: config.businessCode,
+        supplier: response.data?.data || response.data,
+        digitaxPayload: response.data,
+      });
+    } catch (error) {
+      console.error(`DigiTax supplier update error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({
+        success: false,
+        business: config.businessCode,
+        error: getErrorPayload(error),
+        digitaxPayloadSent: payload,
+      });
+    }
+  });
+
+  router.put("/crops/:cropId", async (req, res) => {
+    const config = req.digitaxConfig;
+    const payload = mapItemToDigitax(req.body || {});
+
+    if (!req.params.cropId || !payload.item_name) {
+      return res.status(400).json({
+        success: false,
+        business: config.businessCode,
+        error: "Crop ID and name are required to update a DigiTax item.",
+      });
+    }
+
+    try {
+      const response = await axios.put(
+        `${config.baseUrl}/items/${encodeURIComponent(req.params.cropId)}`,
+        { item_name: payload.item_name, default_unit_price: payload.default_unit_price, tax_type_code: payload.tax_type_code },
+        digitaxRequest(config)
+      );
+      return res.status(response.status || 200).json({
+        success: true,
+        business: config.businessCode,
+        item: response.data?.data || response.data,
+        digitaxPayload: response.data,
+      });
+    } catch (error) {
+      console.error(`DigiTax crop update error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({
+        success: false,
+        business: config.businessCode,
+        error: getErrorPayload(error),
+        digitaxPayloadSent: payload,
+      });
+    }
+  });
+
+  router.put("/items/:itemId", async (req, res) => {
+    const config = req.digitaxConfig;
+    const payload = mapItemToDigitax(req.body || {});
+    if (!req.params.itemId || !payload.item_name) {
+      return res.status(400).json({ success: false, business: config.businessCode, error: "Item ID and name are required to update a DigiTax item." });
+    }
+    try {
+      const response = await axios.put(
+        `${config.baseUrl}/items/${encodeURIComponent(req.params.itemId)}`,
+        { item_name: payload.item_name, default_unit_price: payload.default_unit_price, tax_type_code: payload.tax_type_code },
+        digitaxRequest(config)
+      );
+      return res.status(response.status || 200).json({ success: true, business: config.businessCode, item: response.data?.data || response.data, digitaxPayload: response.data });
+    } catch (error) {
+      console.error(`DigiTax item update error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({ success: false, business: config.businessCode, error: getErrorPayload(error), digitaxPayloadSent: payload });
     }
   });
 
@@ -504,15 +525,116 @@ function createDigitaxRouter() {
   router.get("/purchases", async (req, res) => {
     const config = req.digitaxConfig;
     try {
-      const response = await axios.get(`${config.baseUrl}/purchases`, digitaxRequest(config));
-      return res.json({ business: config.businessCode, data: response.data });
+      const response = await axios.get(`${config.baseUrl}/purchases`, {
+        ...digitaxRequest(config),
+        params: {
+          before: req.query.before,
+          after: req.query.after,
+          page_size: req.query.page_size > 20 ? 20 : req.query.page_size,
+        },
+      });
+      return res.json({ success: true, business: config.businessCode, data: response.data });
     } catch (error) {
+      console.error(`DigiTax purchases error [${config.businessCode}]`, getErrorPayload(error));
       return res.status(error.status || error.response?.status || 400).json({
+        success: false,
         business: config.businessCode,
         error: getErrorPayload(error),
       });
     }
   });
+
+  /*
+  router.post("/reverse-invoice", async (req, res) => {
+    const config = req.digitaxConfig;
+    const {
+      supplierId,
+      supplier_id: supplierIdFromPayload,
+      saleDate,
+      sale_date: saleDateFromPayload,
+      invoiceNo,
+      trader_invoice_number: invoiceNoFromPayload,
+      items = [],
+      paymentType,
+      payment_type_code: paymentTypeFromPayload,
+      invoiceDetails,
+    } = req.body || {};
+    const resolvedSupplierId = supplierId || supplierIdFromPayload;
+    const resolvedInvoiceNo = invoiceNo || invoiceNoFromPayload;
+    const resolvedSaleDate = saleDate || saleDateFromPayload || new Date().toISOString().slice(0, 10);
+
+    if (!resolvedSupplierId || !resolvedInvoiceNo || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        business: config.businessCode,
+        error: "supplierId, invoiceNo and at least one item are required",
+      });
+    }
+
+    let payload;
+    try {
+      payload = {
+        supplier_id: String(resolvedSupplierId),
+        sale_date: String(resolvedSaleDate),
+        customer_tin: req.body.customerTin || undefined,
+        customer_name: req.body.customerName || undefined,
+        customer_phone: req.body.customerPhone || undefined,
+        customer_email: req.body.customerEmail || undefined,
+        payment_type_code: String(paymentType || paymentTypeFromPayload || "07"),
+        invoice_details: invoiceDetails || undefined,
+        trader_invoice_number: String(resolvedInvoiceNo),
+        callback_url: req.body.callbackUrl || undefined,
+        items: items.map((item) => {
+          const id = item.id || item.digitaxItemId || item.itemId;
+          const quantity = Number(item.quantity ?? item.qty ?? 0);
+          const unitPrice = Number(item.unit_price ?? item.unitPrice ?? item.price ?? item.sellingPrice ?? 0);
+          const discountRate = Number(item.discount_rate ?? item.discountRate ?? 0);
+          const discountAmount = Number(item.discount_amount ?? item.discountAmount ?? 0);
+
+          if (!id || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0) {
+            throw new Error(`Each reverse invoice item needs a valid DigiTax item ID, quantity and unit price`);
+          }
+
+          return {
+            id: String(id),
+            quantity,
+            unit_price: unitPrice,
+            total_amount: Number(item.total_amount ?? (quantity * unitPrice - discountAmount)),
+            package_unit_quantity: Number(item.package_unit_quantity ?? item.packageUnitQuantity ?? 1),
+            discount_rate: discountRate,
+            discount_amount: discountAmount,
+            item_name: item.item_name || item.itemName || item.name || undefined,
+            item_class_code: item.item_class_code || item.itemClassCode || undefined,
+            item_bar_code: item.item_bar_code || item.itemBarCode || undefined,
+            item_tax_type_code: item.item_tax_type_code || item.taxTypeCode || undefined,
+            item_description: item.item_description || item.itemDescription || item.name || undefined,
+          };
+        }),
+      };
+
+      const response = await axios.post(
+        `${config.baseUrl}/reverse-invoices`,
+        payload,
+        digitaxRequest(config)
+      );
+      return res.status(response.status || 201).json({
+        success: true,
+        business: config.businessCode,
+        data: response.data?.data || response.data,
+        digitaxPayload: response.data,
+        digitaxPayloadSent: payload,
+      });
+    } catch (error) {
+      console.error(`DigiTax reverse invoice error [${config.businessCode}]`, getErrorPayload(error));
+      return res.status(error.status || error.response?.status || 400).json({
+        success: false,
+        business: config.businessCode,
+        error: getErrorPayload(error),
+        digitaxPayloadSent: payload,
+      });
+    }
+  });
+  */
 
   return router;
 }

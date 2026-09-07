@@ -1,7 +1,19 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import appConfig from "../config/app-config.json";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-export const DEFAULT_APP_CONFIG = Object.freeze({ ...appConfig });
+const PUBLIC_APP_CONFIG_URL = `${import.meta.env.BASE_URL}config/app-config.json`;
+const fallbackConfig = {
+  businessCode: "YL",
+  businessName: "Yeli Farm",
+  businessTel: "+254700000000",
+  businessDisplayName: "Yeli Farm Nursery",
+  appName: "Yeli Farm & Nursery POS",
+  systemName: "Yeli Nursery Management System",
+  kraPin: "A123456789B",
+  address: "Bomet-Nairobi Highway",
+  transactionDescription: "Yeli Farm POS payment",
+  currency: "KES",
+};
+export const DEFAULT_APP_CONFIG = Object.freeze(fallbackConfig);
 const STORAGE_KEY = "business-config";
 
 function readStoredBusinessConfig() {
@@ -51,6 +63,28 @@ const BusinessConfigContext = createContext(null);
 
 export function BusinessConfigProvider({ children }) {
   const [config, setConfig] = useState(() => getEffectiveAppConfig());
+
+  useEffect(() => {
+    let active = true;
+    fetch(PUBLIC_APP_CONFIG_URL, { cache: "no-store" })
+      .then(response => {
+        if (!response.ok) throw new Error(`Config request failed with status ${response.status}`);
+        return response.json();
+      })
+      .then(publicConfig => {
+        if (!publicConfig || typeof publicConfig !== "object") {
+          throw new Error("Public app config must be a JSON object");
+        }
+        if (active) {
+          setConfig({ ...DEFAULT_APP_CONFIG, ...publicConfig, ...readStoredBusinessConfig() });
+        }
+      })
+      .catch(error => console.warn("Using fallback app config", error));
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const updateConfig = useCallback((nextValues) => {
     const merged = saveBusinessConfig(nextValues);

@@ -76,17 +76,15 @@ export const generateETIMSReceipt = (receipt) => {
     kraLogoBase64,
   } = receipt;
 
-  console.log(receipt)
-
   const rawTaxSummary = receipt.taxSummary || [];
   const taxSummary = Array.isArray(rawTaxSummary)
     ? rawTaxSummary
-    : ["d", "b", "c", "a"].map((suffix) => {
+    : ["a", "b", "c", "a"].map((suffix) => {
         const defaultLabels = {
-          d: "16% VAT",
+          a: "16% VAT",
           b: "8% VAT",
           c: "Zero rated",
-          a: "Exempted",
+          d: "Exempted",
         };
         const rate = rawTaxSummary[`tax_rate_${suffix}`];
         const rateLabel = rate !== undefined && rate !== null && rate !== ""
@@ -704,11 +702,11 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
     const quantity = Number(
-      sale.quantity ?? 0
+      sale.quantity || sale.qty || 0
     );
 
     const amount = Number(
-      sale.total_amount ?? 0
+      sale.total_amount || sale.total || sale.qty * sale.sellingPrice || 0
     );
 
       const taxableAmount = Number(
@@ -720,8 +718,8 @@ export const generateETIMSReceipt = (receipt) => {
      * Don't unnecessarily reconstruct transaction values.
      */
     const unitPrice =
-      sale.unitPrice !== undefined
-        ? Number(sale.unit_price)
+      (sale.unitPrice || sale.sellingPrice) !== undefined
+        ? Number(sale.unit_price || sale.sellingPrice)
         : quantity > 0
           ? amount / quantity
           : 0;
@@ -934,7 +932,7 @@ y -= 1;
 
     etims && drawLine() && (y -= 6);
 
-    drawRightTotal(
+    drawLeftTotal(
       "Total Tax",
       totalTax,
       true
@@ -948,14 +946,14 @@ y -= 1;
    */
 
   if (etims) {
-    drawRightTotal(
+    drawLeftTotal(
     "Total",
     (total || items[0]?.bulkTotal || items[0].total),
     true
   );
 }
 
-  drawRightTotal(
+  drawLeftTotal(
     etims
       ? "Total To Pay"
       : "Total",

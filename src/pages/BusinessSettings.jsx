@@ -17,7 +17,7 @@ const fieldDefinitions = [
   { name: "currency", label: "Currency", placeholder: "KES" },
 ];
 
-const ETIMS_API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const ETIMS_API_URL = "https://yelivate-apis.onrender.com";
 const SEEDLING_DEFAULTS = {
   itemClassCode: "99020000",
   itemTypeCode: "3",
@@ -44,6 +44,10 @@ export default function BusinessSettings() {
   const [updatingCropId, setUpdatingCropId] = useState(null);
   const [updatingCustomerId, setUpdatingCustomerId] = useState(null);
   const [updatingSupplierId, setUpdatingSupplierId] = useState(null);
+  const [loadingItemsFromDigitax, setLoadingItemsFromDigitax] = useState(false);
+  const [loadingCustomersFromDigitax, setLoadingCustomersFromDigitax] = useState(false);
+  const [loadingSuppliersFromDigitax, setLoadingSuppliersFromDigitax] = useState(false);
+  const [loadingAllFromDigitax, setLoadingAllFromDigitax] = useState(false);
 
   useEffect(() => {
     setForm(config);
@@ -317,6 +321,284 @@ export default function BusinessSettings() {
     }
   };
 
+  const loadItemsFromDigitax = async ({ silent = false } = {}) => {
+    setLoadingItemsFromDigitax(true);
+    try {
+      const response = await fetch(`${ETIMS_API_URL}/api/etims/items?page_size=100`);
+      const result = await response.json();
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.error?.message || result?.error || "Failed to load items from DigiTax.");
+      }
+      const rawList = Array.isArray(result?.data)
+        ? result.data
+        : result?.data?.data || result?.item || [];
+
+      if (!rawList.length) {
+        if (!silent) showToast("No items found in DigiTax.");
+        return 0;
+      }
+
+      const existingRes = await db.allDocs({ include_docs: true });
+      const currentCrops = existingRes.rows.map((r) => r.doc).filter((d) => d && d.type === "crop");
+
+      let addedCount = 0;
+      let updatedCount = 0;
+      const now = new Date().toISOString();
+
+      for (const dItem of rawList) {
+        const itemId = String(dItem.id || dItem._id || "").trim();
+        const itemName = String(dItem.name || dItem.item_name || dItem.itemName || "").trim();
+        if (!itemId || !itemName) continue;
+
+        const price = Number(dItem.default_unit_price ?? dItem.sellingPrice ?? dItem.price ?? 0);
+        const itemCode = dItem.item_bar_code || dItem.etims_item_code || null;
+
+        // Match existing crop by digitaxItemId, or case-insensitive name
+        const match = currentCrops.find(
+          (c) => c.digitaxItemId === itemId || c.name.toLowerCase() === itemName.toLowerCase()
+        );
+
+        if (match) {
+          const updated = {
+            ...match,
+            digitaxItemId: itemId,
+            digitaxItemCode: itemCode || match.digitaxItemCode || null,
+            name: match.name || itemName,
+            price: match.price || price,
+            taxTypeCode: dItem.tax_type_code || match.taxTypeCode || "D",
+            updatedAt: now,
+          };
+          await db.put(updated);
+          updatedCount++;
+        } else {
+          const newCrop = {
+            _id: `crop:${itemName.replace(/\s+/g, "_")}:${Date.now()}:${Math.floor(Math.random() * 1000)}`,
+            type: "crop",
+            name: itemName,
+            price,
+            daysToReady: 90,
+            minStockThreshold: 25,
+            active: true,
+            digitaxItemId: itemId,
+            digitaxItemCode: itemCode,
+            digitaxRegisteredAt: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+          await db.put(newCrop);
+          currentCrops.push(newCrop);
+          addedCount++;
+        }
+      }
+
+      await loadCrops();
+      if (!silent) {
+        showToast(`DigiTax Items: ${addedCount} imported, ${updatedCount} matched/updated.`);
+      }
+      return addedCount + updatedCount;
+    } catch (error) {
+      console.error("Error loading items from DigiTax:", error);
+      if (!silent) showToast(`Could not load items from DigiTax: ${error.message}`);
+      throw error;
+    } finally {
+      setLoadingItemsFromDigitax(false);
+    }
+  };
+
+  const loadCustomersFromDigitax = async ({ silent = false } = {}) => {
+    setLoadingCustomersFromDigitax(true);
+    try {
+      const response = await fetch(`${ETIMS_API_URL}/api/etims/customers?page_size=100`);
+      const result = await response.json();
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.error?.message || result?.error || "Failed to load customers from DigiTax.");
+      }
+      const rawList = Array.isArray(result?.data)
+        ? result.data
+        : result?.data?.data || result?.customer || [];
+
+      if (!rawList.length) {
+        if (!silent) showToast("No customers found in DigiTax.");
+        return 0;
+      }
+
+      const existingRes = await db.allDocs({ include_docs: true, startkey: "customer:", endkey: "customer:\uffff" });
+      const currentCustomers = existingRes.rows.map((r) => r.doc).filter((d) => d && d.type === "customer");
+
+      let addedCount = 0;
+      let updatedCount = 0;
+      const now = new Date().toISOString();
+
+      for (const dCust of rawList) {
+        const custId = String(dCust.id || dCust._id || "").trim();
+        const custName = String(dCust.customer_name || dCust.name || "").trim();
+        const custTin = String(dCust.customer_tin || dCust.krapin || dCust.pin || "").trim();
+        if (!custId || (!custName && !custTin)) continue;
+
+        const match = currentCustomers.find(
+          (c) =>
+            c.digitaxCustomerId === custId ||
+            (custTin && c.krapin && c.krapin.toUpperCase() === custTin.toUpperCase()) ||
+            (custName && c.name.toLowerCase() === custName.toLowerCase())
+        );
+
+        if (match) {
+          const updated = {
+            ...match,
+            digitaxCustomerId: custId,
+            name: match.name || custName,
+            krapin: match.krapin || custTin,
+            email: match.email || dCust.email || "",
+            phone: match.phone || dCust.phone || "",
+            updatedAt: now,
+          };
+          await db.put(updated);
+          updatedCount++;
+        } else {
+          const newCustomer = {
+            _id: `customer:${Date.now()}:${Math.floor(Math.random() * 10000)}`,
+            type: "customer",
+            name: custName || "DigiTax Customer",
+            krapin: custTin,
+            phone: dCust.phone || "",
+            email: dCust.email || "",
+            notes: "Imported from DigiTax",
+            digitaxCustomerId: custId,
+            digitaxRegisteredAt: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+          await db.put(newCustomer);
+          currentCustomers.push(newCustomer);
+          addedCount++;
+        }
+      }
+
+      await loadCustomers();
+      if (!silent) {
+        showToast(`DigiTax Customers: ${addedCount} imported, ${updatedCount} matched/updated.`);
+      }
+      return addedCount + updatedCount;
+    } catch (error) {
+      console.error("Error loading customers from DigiTax:", error);
+      if (!silent) showToast(`Could not load customers from DigiTax: ${error.message}`);
+      throw error;
+    } finally {
+      setLoadingCustomersFromDigitax(false);
+    }
+  };
+
+  const loadSuppliersFromDigitax = async ({ silent = false } = {}) => {
+    setLoadingSuppliersFromDigitax(true);
+    try {
+      const response = await fetch(`${ETIMS_API_URL}/api/etims/suppliers?page_size=100`);
+      const result = await response.json();
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.error?.message || result?.error || "Failed to load suppliers from DigiTax.");
+      }
+      const rawList = Array.isArray(result?.data)
+        ? result.data
+        : result?.data?.data || result?.supplier || [];
+
+      if (!rawList.length) {
+        if (!silent) showToast("No suppliers found in DigiTax.");
+        return 0;
+      }
+
+      const existingRes = await db.allDocs({ include_docs: true, startkey: "supplier:", endkey: "supplier:\uffff" });
+      const currentSuppliers = existingRes.rows.map((r) => r.doc).filter((d) => d && d.type === "supplier");
+
+      let addedCount = 0;
+      let updatedCount = 0;
+      const now = new Date().toISOString();
+
+      for (const dSupp of rawList) {
+        const suppId = String(dSupp.id || dSupp._id || "").trim();
+        const suppName = String(dSupp.supplier_name || dSupp.name || "").trim();
+        const suppTin = String(dSupp.supplier_tin || dSupp.krapin || dSupp.pin || "").trim();
+        if (!suppId || (!suppName && !suppTin)) continue;
+
+        const match = currentSuppliers.find(
+          (s) =>
+            s.digitaxSupplierId === suppId ||
+            (suppTin && s.krapin && s.krapin.toUpperCase() === suppTin.toUpperCase()) ||
+            (suppName && s.name.toLowerCase() === suppName.toLowerCase())
+        );
+
+        if (match) {
+          const updated = {
+            ...match,
+            digitaxSupplierId: suppId,
+            name: match.name || suppName,
+            krapin: match.krapin || suppTin,
+            email: match.email || dSupp.email || "",
+            phone: match.phone || dSupp.phone || "",
+            updatedAt: now,
+          };
+          await db.put(updated);
+          updatedCount++;
+        } else {
+          const newSupplier = {
+            _id: `supplier:${Date.now()}:${Math.floor(Math.random() * 10000)}`,
+            type: "supplier",
+            name: suppName || "DigiTax Supplier",
+            krapin: suppTin,
+            phone: dSupp.phone || "",
+            email: dSupp.email || "",
+            contactPerson: dSupp.contact_person || "",
+            address: dSupp.address || "",
+            digitaxSupplierId: suppId,
+            digitaxRegisteredAt: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+          await db.put(newSupplier);
+          currentSuppliers.push(newSupplier);
+          addedCount++;
+        }
+      }
+
+      await loadSuppliers();
+      if (!silent) {
+        showToast(`DigiTax Suppliers: ${addedCount} imported, ${updatedCount} matched/updated.`);
+      }
+      return addedCount + updatedCount;
+    } catch (error) {
+      console.error("Error loading suppliers from DigiTax:", error);
+      if (!silent) showToast(`Could not load suppliers from DigiTax: ${error.message}`);
+      throw error;
+    } finally {
+      setLoadingSuppliersFromDigitax(false);
+    }
+  };
+
+  const loadAllFromDigitax = async () => {
+    setLoadingAllFromDigitax(true);
+    try {
+      const results = await Promise.allSettled([
+        loadItemsFromDigitax({ silent: true }),
+        loadCustomersFromDigitax({ silent: true }),
+        loadSuppliersFromDigitax({ silent: true }),
+      ]);
+
+      const itemsSuccess = results[0].status === "fulfilled";
+      const customersSuccess = results[1].status === "fulfilled";
+      const suppliersSuccess = results[2].status === "fulfilled";
+
+      if (itemsSuccess && customersSuccess && suppliersSuccess) {
+        showToast("Successfully loaded and synced items, customers, and suppliers from DigiTax.");
+      } else {
+        const errors = results
+          .filter((r) => r.status === "rejected")
+          .map((r) => r.reason?.message || "Error")
+          .join("; ");
+        showToast(`DigiTax sync completed with notices: ${errors}`);
+      }
+    } finally {
+      setLoadingAllFromDigitax(false);
+    }
+  };
+
   return (
     <div className="p-4 pb-12 mb-4 max-w-4xl mx-auto">
       <div className="mb-6">
@@ -366,6 +648,67 @@ export default function BusinessSettings() {
         </div>
       </form>
 
+      {/* DigiTax Import & Sync Card */}
+      <section className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm p-5 mt-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-blue-950 flex items-center gap-2">
+              <span>📥</span> Import Data from DigiTax
+            </h2>
+            <p className="text-sm text-blue-800 mt-1 max-w-xl">
+              Fetch existing items (crops/seedlings), registered customers, and suppliers directly from your DigiTax account and sync them locally.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadAllFromDigitax}
+            disabled={loadingAllFromDigitax || loadingItemsFromDigitax || loadingCustomersFromDigitax || loadingSuppliersFromDigitax}
+            className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 shadow-sm disabled:opacity-60 transition shrink-0"
+          >
+            {loadingAllFromDigitax ? (
+              <>
+                <span className="inline-block animate-spin">⏳</span>
+                <span>Importing All...</span>
+              </>
+            ) : (
+              <>
+                <span>🔄</span>
+                <span>Import All from DigiTax</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-blue-200/60">
+          <button
+            type="button"
+            onClick={() => loadItemsFromDigitax()}
+            disabled={loadingItemsFromDigitax || loadingAllFromDigitax}
+            className="flex items-center justify-center gap-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-900 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-60 shadow-2xs"
+          >
+            {loadingItemsFromDigitax ? "Loading Items..." : "📦 Load Items Only"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadCustomersFromDigitax()}
+            disabled={loadingCustomersFromDigitax || loadingAllFromDigitax}
+            className="flex items-center justify-center gap-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-900 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-60 shadow-2xs"
+          >
+            {loadingCustomersFromDigitax ? "Loading Customers..." : "👥 Load Customers Only"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadSuppliersFromDigitax()}
+            disabled={loadingSuppliersFromDigitax || loadingAllFromDigitax}
+            className="flex items-center justify-center gap-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-900 px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-60 shadow-2xs"
+          >
+            {loadingSuppliersFromDigitax ? "Loading Suppliers..." : "🚚 Load Suppliers Only"}
+          </button>
+        </div>
+      </section>
+
       <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mt-5">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
@@ -374,14 +717,24 @@ export default function BusinessSettings() {
               Register crop varieties as DigiTax items before creating eTIMS invoices. Seedling item defaults are applied automatically.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={registerAllCrops}
-            disabled={registeringAll || crops.every((crop) => crop.digitaxItemId || crop.active === false)}
-            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
-          >
-            {registeringAll ? "Registering..." : "Register all active crops"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => loadItemsFromDigitax()}
+              disabled={loadingItemsFromDigitax || loadingAllFromDigitax}
+              className="border border-blue-300 text-blue-700 bg-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-50 disabled:opacity-60"
+            >
+              {loadingItemsFromDigitax ? "Loading..." : "Load items from DigiTax"}
+            </button>
+            <button
+              type="button"
+              onClick={registerAllCrops}
+              disabled={registeringAll || crops.every((crop) => crop.digitaxItemId || crop.active === false)}
+              className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+            >
+              {registeringAll ? "Registering..." : "Register all active crops"}
+            </button>
+          </div>
         </div>
 
         {!crops.length ? (
@@ -418,14 +771,24 @@ export default function BusinessSettings() {
               Customers must have a KRA PIN because DigiTax requires a tax identification number for registration.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={registerAllCustomers}
-            disabled={registeringAllCustomers || customers.every((customer) => customer.digitaxCustomerId || !customer.krapin)}
-            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
-          >
-            {registeringAllCustomers ? "Registering..." : "Register all customers"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => loadCustomersFromDigitax()}
+              disabled={loadingCustomersFromDigitax || loadingAllFromDigitax}
+              className="border border-blue-300 text-blue-700 bg-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-50 disabled:opacity-60"
+            >
+              {loadingCustomersFromDigitax ? "Loading..." : "Load customers from DigiTax"}
+            </button>
+            <button
+              type="button"
+              onClick={registerAllCustomers}
+              disabled={registeringAllCustomers || customers.every((customer) => customer.digitaxCustomerId || !customer.krapin)}
+              className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+            >
+              {registeringAllCustomers ? "Registering..." : "Register all customers"}
+            </button>
+          </div>
         </div>
 
         {!customers.length ? (
@@ -462,14 +825,24 @@ export default function BusinessSettings() {
               Suppliers must have a KRA PIN because DigiTax requires a tax identification number for registration.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={registerAllSuppliers}
-            disabled={registeringAllSuppliers || suppliers.every((supplier) => supplier.digitaxSupplierId || !supplier.krapin)}
-            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
-          >
-            {registeringAllSuppliers ? "Registering..." : "Register all suppliers"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => loadSuppliersFromDigitax()}
+              disabled={loadingSuppliersFromDigitax || loadingAllFromDigitax}
+              className="border border-blue-300 text-blue-700 bg-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-50 disabled:opacity-60"
+            >
+              {loadingSuppliersFromDigitax ? "Loading..." : "Load suppliers from DigiTax"}
+            </button>
+            <button
+              type="button"
+              onClick={registerAllSuppliers}
+              disabled={registeringAllSuppliers || suppliers.every((supplier) => supplier.digitaxSupplierId || !supplier.krapin)}
+              className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+            >
+              {registeringAllSuppliers ? "Registering..." : "Register all suppliers"}
+            </button>
+          </div>
         </div>
 
         {!suppliers.length ? (

@@ -34,7 +34,7 @@ export default function CustomerFormCard({
         <input
             type="text"
             className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. John Doe"
+            placeholder="e.g. P051234567A"
             value={form.krapin}
             onChange={(e) => onChange("krapin", e.target.value)}
           />

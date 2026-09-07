@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const BACKUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-const MAX_BACKUPS = 5;
+const MAX_BACKUPS = 12;
 
 let lastBackup = Date.now();
 

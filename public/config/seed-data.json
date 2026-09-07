@@ -1,0 +1,64 @@
+{
+  "crops": [
+    {
+      "_id": "seed:crop:tomato-money-maker",
+      "type": "crop",
+      "name": "Tomato Money Maker",
+      "price": 35,
+      "costPrice": 18,
+      "daysToReady": 35,
+      "minStockThreshold": 40,
+      "active": true
+    },
+    {
+      "_id": "seed:crop:kale",
+      "type": "crop",
+      "name": "Kale (Sukuma Wiki)",
+      "price": 20,
+      "costPrice": 9,
+      "daysToReady": 28,
+      "minStockThreshold": 50,
+      "active": true
+    },
+    {
+      "_id": "seed:crop:pepper",
+      "type": "crop",
+      "name": "California Wonder Pepper",
+      "price": 45,
+      "costPrice": 22,
+      "daysToReady": 42,
+      "minStockThreshold": 25,
+      "active": true
+    }
+  ],
+  "suppliers": [
+    { "_id": "seed:supplier:kenya-seed", "type": "supplier", "name": "Kenya Seed Company", "phone": "+254700111222", "email": "orders@kenyaseed.example", "contactPerson": "Mary Chebet", "krapin": "P051234567A", "address": "Nakuru" },
+    { "_id": "seed:supplier:green-grow", "type": "supplier", "name": "Green Grow Inputs", "phone": "+254711333444", "email": "sales@greengrow.example", "contactPerson": "Peter Kiptoo", "krapin": "P052345678B", "address": "Bomet" },
+    { "_id": "seed:supplier:agri-tools", "type": "supplier", "name": "Agri Tools & Supplies", "phone": "+254722555666", "email": "hello@agritools.example", "contactPerson": "Jane Achieng", "krapin": "P053456789C", "address": "Kericho" }
+  ],
+  "customers": [
+    { "_id": "seed:customer:joyce", "type": "customer", "name": "Joyce Njeri", "phone": "+254733100101", "email": "joyce@example.com", "krapin": "", "notes": "Regular nursery customer" },
+    { "_id": "seed:customer:brian", "type": "customer", "name": "Brian Otieno", "phone": "+254733100202", "email": "brian@example.com", "krapin": "", "notes": "Landscaping client" },
+    { "_id": "seed:customer:faith", "type": "customer", "name": "Faith Wambui", "phone": "+254733100303", "email": "faith@example.com", "krapin": "", "notes": "Smallholder farmer" }
+  ],
+  "batches": [
+    { "_id": "seed:batch:tomato:001", "type": "batch", "cropId": "seed:crop:tomato-money-maker", "cropName": "Tomato Money Maker", "batchName": "Tomato Money Maker-001", "batchNumber": "001", "quantityPlanted": 120, "quantityRemaining": 78, "quantityLost": 0, "datePlanted": "2026-07-20T08:00:00.000Z", "expectedReadyDate": "2026-08-24T08:00:00.000Z", "readyOverride": true },
+    { "_id": "seed:batch:kale:001", "type": "batch", "cropId": "seed:crop:kale", "cropName": "Kale (Sukuma Wiki)", "batchName": "Kale-001", "batchNumber": "001", "quantityPlanted": 200, "quantityRemaining": 145, "quantityLost": 3, "datePlanted": "2026-08-01T08:00:00.000Z", "expectedReadyDate": "2026-08-29T08:00:00.000Z", "readyOverride": true },
+    { "_id": "seed:batch:pepper:001", "type": "batch", "cropId": "seed:crop:pepper", "cropName": "California Wonder Pepper", "batchName": "California Wonder Pepper-001", "batchNumber": "001", "quantityPlanted": 90, "quantityRemaining": 90, "quantityLost": 0, "datePlanted": "2026-08-25T08:00:00.000Z", "expectedReadyDate": "2026-10-06T08:00:00.000Z", "readyOverride": true }
+  ],
+  "sales": [
+    { "_id": "seed:sale:001", "type": "sale", "name": "Tomato Money Maker", "quantity": 12, "total": 420, "sellingPrice": 35, "timestamp": "2026-08-28T10:15:00.000Z", "isCreditSale": true, "isPresale": false, "presaleStatus": null, "dwnPayment": 100, "paymentHistory": [], "customerName": "Joyce Njeri", "batchId": "seed:batch:tomato:001", "batchDatePlanted": "2026-07-20T08:00:00.000Z", "isCreditPaid": false },
+    { "_id": "seed:sale:002", "type": "sale", "name": "Kale (Sukuma Wiki)", "quantity": 20, "total": 400, "sellingPrice": 20, "timestamp": "2026-08-30T13:30:00.000Z", "isCreditSale": true, "isPresale": false, "presaleStatus": null, "dwnPayment": 0, "paymentHistory": [], "customerName": "Brian Otieno", "batchId": "seed:batch:kale:001", "batchDatePlanted": "2026-08-01T08:00:00.000Z", "isCreditPaid": false },
+    { "_id": "seed:sale:003", "type": "sale", "name": "California Wonder Pepper", "quantity": 8, "total": 360, "sellingPrice": 45, "timestamp": "2026-09-01T09:45:00.000Z", "isCreditSale": true, "isPresale": false, "presaleStatus": null, "dwnPayment": 150, "paymentHistory": [], "customerName": "Faith Wambui", "batchId": "seed:batch:pepper:001", "batchDatePlanted": "2026-08-25T08:00:00.000Z", "isCreditPaid": false }
+  ],
+  "purchases": [
+    { "_id": "seed:purchase:001", "type": "purchase", "item": "Tomato seed trays", "category": "Seeds", "supplierId": "seed:supplier:kenya-seed", "supplierName": "Kenya Seed Company", "supplierPin": "P051234567A", "cropId": "seed:crop:tomato-money-maker", "cropName": "Tomato Money Maker", "quantity": 5, "units": "trays", "modeOfPayment": "Mpesa", "paymentReference": "SEEDMPESA001", "totalCost": 2500, "notes": "Seed testing record", "date": "2026-08-20T12:00:00.000Z" },
+    { "_id": "seed:purchase:002", "type": "purchase", "item": "Organic compost", "category": "Fertilizer & Soil", "supplierId": "seed:supplier:green-grow", "supplierName": "Green Grow Inputs", "supplierPin": "P052345678B", "cropId": "seed:crop:kale", "cropName": "Kale (Sukuma Wiki)", "quantity": 10, "units": "bags", "modeOfPayment": "Cash", "paymentReference": "", "totalCost": 8500, "notes": "Compost for demonstration batch", "date": "2026-08-22T12:00:00.000Z" },
+    { "_id": "seed:purchase:003", "type": "purchase", "item": "Nursery watering cans", "category": "Tools & Equipment", "supplierId": "seed:supplier:agri-tools", "supplierName": "Agri Tools & Supplies", "supplierPin": "P053456789C", "cropId": null, "cropName": "General Nursery Overhead", "quantity": 3, "units": "cans", "modeOfPayment": "Bank", "paymentReference": "BANK-SEED-003", "totalCost": 4500, "notes": "Equipment testing record", "date": "2026-08-24T12:00:00.000Z" }
+  ],
+  "spoilage": [
+    { "_id": "seed:spoilage:001", "type": "spoilage", "batchId": "seed:batch:kale:001", "cropName": "Kale (Sukuma Wiki)", "quantityLost": 3, "reason": "Over / Under-Watering", "notes": "Demo spoilage record", "date": "2026-08-27T11:00:00.000Z" },
+    { "_id": "seed:spoilage:002", "type": "spoilage", "batchId": "seed:batch:tomato:001", "cropName": "Tomato Money Maker", "quantityLost": 2, "reason": "Pest Infestation", "notes": "Demo pest record", "date": "2026-08-26T11:00:00.000Z" },
+    { "_id": "seed:spoilage:003", "type": "spoilage", "batchId": "seed:batch:pepper:001", "cropName": "California Wonder Pepper", "quantityLost": 1, "reason": "Mechanical / Handling Damage", "notes": "Demo handling record", "date": "2026-09-02T11:00:00.000Z" }
+  ]
+}

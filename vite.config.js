@@ -44,6 +44,18 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       }
-    })
+    }),
   ],
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          jspdf: ['jspdf'],
+          pdfUtils: ['html2canvas', 'dompurify'],
+        },
+      },
+    },
+  },
 });

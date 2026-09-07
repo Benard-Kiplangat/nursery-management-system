@@ -19,22 +19,32 @@ const emptyForm = {
   notes: ""
 };
 
+const ETIMS_API_URL = "https://yelivate-apis.onrender.com";
+
 export default function Purchase() {
+  // Core state
   const [form, setForm] = useState(emptyForm);
   const [purchaseHistory, setPurchaseHistory] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [crops, setCrops] = useState([]);
-
-  // Quick Supplier Modal
+  const [etimsPurchases, setEtimsPurchases] = useState([]);
+  const [loadingEtimsPurchases, setLoadingEtimsPurchases] = useState(false);
+  const [etimsError, setEtimsError] = useState("");
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [supplierForm, setSupplierForm] = useState({ name: "", phone: "", email: "", contactPerson: "", krapin: "" });
-
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
     return d.toISOString().slice(0, 10);
   });
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  // Bulk purchase state
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [batchItems, setBatchItems] = useState([]);
+  const [batchError, setBatchError] = useState("");
+  // View toggle for grouped history
+  const [isGroupedView, setIsGroupedView] = useState(true);
+  // Duplicated state declarations removed
 
   useEffect(() => {
     loadPurchases();
@@ -59,6 +69,80 @@ export default function Purchase() {
     setCrops(list);
   };
 
+  const loadEtimsPurchases = async () => {
+    setLoadingEtimsPurchases(true);
+    setEtimsError("");
+    try {
+      const response = await fetch(`${ETIMS_API_URL}/api/etims/purchases?page_size=100`);
+      const result = await response.json();
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.error?.message || result?.error || "Could not load eTIMS purchases.");
+      }
+      const payload = result?.data;
+      setEtimsPurchases(Array.isArray(payload) ? payload : payload?.data || []);
+    } catch (error) {
+      console.error("Failed to load eTIMS purchases", error);
+      setEtimsError(error.message);
+    } finally {
+      setLoadingEtimsPurchases(false);
+    }
+  };
+
+  const saveEtimsPurchaseLocally = async (etimsPurchase) => {
+    const etimsPurchaseId = etimsPurchase.id;
+    if (!etimsPurchaseId) {
+      return alert("This eTIMS purchase has no ID and cannot be saved locally.");
+    }
+
+    const existing = purchaseHistory.find((purchase) => purchase.etimsPurchaseId === etimsPurchaseId);
+    if (existing) {
+      return alert("This eTIMS purchase has already been saved locally.");
+    }
+
+    const items = etimsPurchase.item_list || etimsPurchase.items || [];
+    const totalCost = Number(
+      etimsPurchase.total_amount ??
+      etimsPurchase.totalAmount ??
+      items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0)
+    );
+    const supplier = suppliers.find((item) =>
+      item.digitaxSupplierId === etimsPurchase.supplier_id ||
+      item.krapin === etimsPurchase.supplier_pin
+    );
+    const purchaseDate = etimsPurchase.purchase_date || new Date().toISOString().slice(0, 10);
+    const itemNames = items.map((item) => item.item_name || item.itemName || item.name).filter(Boolean);
+    const record = {
+      _id: `purchase:etims:${etimsPurchaseId}`,
+      type: "purchase",
+      etimsPurchaseId,
+      item: itemNames.join(", ") || "eTIMS purchase",
+      category: "Other",
+      supplierId: supplier?._id || null,
+      supplierName: etimsPurchase.supplier_name || supplier?.name || "Unspecified Supplier",
+      supplierPin: etimsPurchase.supplier_pin || supplier?.krapin || null,
+      digitaxSupplierId: etimsPurchase.supplier_id || supplier?.digitaxSupplierId || null,
+      cropId: null,
+      cropName: "General Nursery Overhead",
+      quantity: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) || 1,
+      units: items.length > 1 ? `${items.length} items` : items[0]?.quantity_unit_code || "",
+      modeOfPayment: etimsPurchase.payment_type_code || "Other",
+      paymentReference: etimsPurchase.supplier_invoice_number || "",
+      totalCost: Number.isFinite(totalCost) ? totalCost : 0,
+      notes: `Imported from eTIMS invoice ${etimsPurchase.invoice_number || etimsPurchaseId}`,
+      date: new Date(`${purchaseDate}T12:00:00`).toISOString(),
+      etimsData: etimsPurchase,
+    };
+
+    try {
+      await db.put(record);
+      await loadPurchases();
+      showToast("eTIMS purchase saved locally");
+    } catch (error) {
+      console.error("Failed to save eTIMS purchase locally", error);
+      alert("Failed to save eTIMS purchase locally.");
+    }
+  };
+
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const handleSave = async () => {
@@ -77,7 +161,6 @@ export default function Purchase() {
     
     const supplierObj = suppliers.find(s => s._id === form.supplierId);
     const cropObj = crops.find(c => c._id === form.cropId);
-
     const record = {
       _id: `purchase:${Date.now()}:${Math.floor(Math.random() * 1000)}`,
       type: "purchase",
@@ -100,23 +183,9 @@ export default function Purchase() {
 
     try {
       await db.put(record);
-      /*if (form.eTIMS) {
-        const response = await fetch(`${ETIMS_API_URL}/api/etims/reverse-invoice`, {
-          method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      purchaseCount,
-      supplierId: supplierObj ? supplierObj.digitaxSupplierId : null,
-      items: items.map((item) => ({
-        ...item,
-        digitaxItemId: getDigitaxItemId(item),
-      })),
-      paymentType: getDigitaxPaymentType(items[0].paymentMethod),
-    }),
-  })
-      }*/
       setForm(emptyForm);
       await loadPurchases();
+      showToast("Purchase saved");
     } catch (e) {
       console.error("Failed to save purchase", e);
       alert("Failed to save purchase.");
@@ -136,6 +205,106 @@ export default function Purchase() {
     }
   };
 
+  const handleAddToBatch = () => {
+    if (!form.item.trim()) return alert("Please enter the item name purchased.");
+    const quantity = Number(form.quantity);
+    const cost = Number(form.cost);
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return alert("Quantity must be greater than 0.");
+    }
+    if (!Number.isFinite(cost) || cost < 0) {
+      return alert("Total cost must be 0 or greater.");
+    }
+
+    const supplierObj = suppliers.find(s => s._id === form.supplierId);
+    const cropObj = crops.find(c => c._id === form.cropId);
+
+    const itemToAdd = {
+      _tempId: `batch-item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      item: form.item.trim(),
+      category: form.category,
+      supplierId: form.supplierId || null,
+      supplierName: supplierObj ? supplierObj.name : "Unspecified Supplier",
+      supplierPin: supplierObj ? supplierObj.krapin : null,
+      digitaxSupplierId: supplierObj ? supplierObj.digitaxSupplierId : null,
+      cropId: form.cropId || null,
+      cropName: cropObj ? cropObj.name : "General Nursery Overhead",
+      quantity,
+      units: form.units,
+      modeOfPayment: form.modeOfPayment,
+      paymentReference: form.paymentReference,
+      totalCost: cost,
+      notes: form.notes.trim(),
+      purchaseDate: form.purchaseDate,
+    };
+
+    setBatchItems(prev => [...prev, itemToAdd]);
+    // Keep supplier and payment details to make logging multiple items from the same supplier effortless
+    setForm(prev => ({
+      ...emptyForm,
+      supplierId: prev.supplierId,
+      modeOfPayment: prev.modeOfPayment,
+      paymentReference: prev.paymentReference,
+      purchaseDate: prev.purchaseDate,
+    }));
+    showToast(`Added "${itemToAdd.item}" to bulk batch`);
+  };
+
+  const handleRemoveFromBatch = (tempId) => {
+    setBatchItems(prev => prev.filter(it => it._tempId !== tempId));
+  };
+
+  const handleClearBatch = () => {
+    if (batchItems.length === 0) return;
+    if (window.confirm("Clear all items currently in this bulk batch?")) {
+      setBatchItems([]);
+      setBatchError("");
+    }
+  };
+
+  const handleSaveBatch = async () => {
+    if (batchItems.length === 0) {
+      alert("Please add at least one item to the bulk batch before saving.");
+      return;
+    }
+
+    const batchId = `batch:${Date.now()}:${Math.floor(Math.random() * 1000)}`;
+    const records = batchItems.map((item, index) => ({
+      _id: `purchase:${Date.now()}:${index}:${Math.floor(Math.random() * 1000)}`,
+      type: "purchase",
+      batchId,
+      item: item.item,
+      category: item.category,
+      supplierId: item.supplierId,
+      supplierName: item.supplierName,
+      supplierPin: item.supplierPin,
+      digitaxSupplierId: item.digitaxSupplierId,
+      cropId: item.cropId,
+      cropName: item.cropName,
+      quantity: item.quantity,
+      units: item.units,
+      modeOfPayment: item.modeOfPayment,
+      paymentReference: item.paymentReference,
+      totalCost: item.totalCost,
+      notes: item.notes,
+      date: new Date(`${item.purchaseDate}T12:00:00`).toISOString(),
+    }));
+
+    try {
+      for (const rec of records) {
+        await db.put(rec);
+      }
+      setBatchItems([]);
+      setForm(emptyForm);
+      await loadPurchases();
+      showToast(`Saved bulk batch with ${records.length} items.`);
+    } catch (e) {
+      console.error("Failed to save bulk batch", e);
+      alert("Failed to save bulk purchase batch: " + e.message);
+    }
+  };
+
   const handleDelete = async (purchase) => {
     if (!window.confirm(`Delete purchase "${purchase.item}"?`)) return;
     try {
@@ -144,6 +313,21 @@ export default function Purchase() {
     } catch (e) {
       console.error("Failed to delete purchase", e);
       alert("Failed to delete purchase.");
+    }
+  };
+
+  const handleDeleteBatch = async (batchItemsToDelete) => {
+    const count = batchItemsToDelete.length;
+    if (!window.confirm(`Delete all ${count} items in this bulk purchase?`)) return;
+    try {
+      for (const p of batchItemsToDelete) {
+        await db.remove(p);
+      }
+      await loadPurchases();
+      showToast(`Deleted bulk purchase (${count} items).`);
+    } catch (e) {
+      console.error("Failed to delete bulk batch", e);
+      alert("Failed to delete bulk purchase.");
     }
   };
 
@@ -215,6 +399,38 @@ export default function Purchase() {
 
   const cropBreakdown = Object.entries(cropSpend)
     .sort((a, b) => b[1] - a[1]);
+
+  // Group purchases for display:
+  // 1) Explicit batches (items having p.batchId) are grouped by batchId
+  // 2) Single/legacy purchases can optionally be grouped by supplier & date if desired, or single purchases stand as individual entries
+  const groupedPurchases = (() => {
+    const groupsMap = new Map();
+    for (const p of sortedPurchases) {
+      // Group key: if item has batchId, group by batchId.
+      // Otherwise each individual purchase is its own group key (preserving 100% backwards compatibility)
+      const key = p.batchId ? `batch:${p.batchId}` : `single:${p._id}`;
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          isBatch: Boolean(p.batchId),
+          batchId: p.batchId || null,
+          supplierName: p.supplierName || "Unspecified Supplier",
+          date: p.date,
+          modeOfPayment: p.modeOfPayment,
+          paymentReference: p.paymentReference,
+          notes: p.notes,
+          items: [],
+          totalCost: 0,
+        });
+      }
+      const grp = groupsMap.get(key);
+      grp.items.push(p);
+      grp.totalCost += Number(p.totalCost) || 0;
+      // Keep notes or references if missing on header
+      if (!grp.notes && p.notes) grp.notes = p.notes;
+      if (!grp.paymentReference && p.paymentReference) grp.paymentReference = p.paymentReference;
+    }
+    return Array.from(groupsMap.values());
+  })();
 
   const handleHardRefresh = async () => {
     try {
@@ -301,9 +517,35 @@ export default function Purchase() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid lg:grid-cols-3 gap-6 lg:col-span-3 sm:space-y-6">
             <div className="lg:mb-[300px] lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                📝 Log Input Purchase
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  📝 {isBulkMode ? "Log Bulk Purchase Batch" : "Log Input Purchase"}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition">
+                    <input
+                      type="checkbox"
+                      checked={isBulkMode}
+                      onChange={(e) => setIsBulkMode(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>📦 Bulk Purchase Mode</span>
+                  </label>
+                </div>
+              </div>
+
+              {isBulkMode && (
+                <div className="mb-4 p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-bold">Bulk Purchase Mode Active:</span> Fill the details for each item and click <strong>&quot;Add Item to Batch&quot;</strong>. Once all items are queued, click <strong>&quot;Save Entire Batch&quot;</strong>.
+                  </div>
+                  {batchItems.length > 0 && (
+                    <span className="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                      {batchItems.length} {batchItems.length === 1 ? "item" : "items"} queued
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -408,8 +650,8 @@ export default function Purchase() {
                 <div className="">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Mode of Payment</label>
                   <select
-                    value={form.mode}
-                    onChange={(e) => handleChange("mode", e.target.value)}
+                    value={form.modeOfPayment}
+                    onChange={(e) => handleChange("modeOfPayment", e.target.value)}
                     className="w-full p-2 border border-slate-300 rounded-lg text-sm"
                   >
                     <option value="Mpesa">Mpesa</option>
@@ -424,7 +666,7 @@ export default function Purchase() {
                     value={form.paymentReference ?? ""}
                     onChange={(e) => handleChange("paymentReference", e.target.value)}
                     className="w-full p-2 border border-slate-300 rounded-lg text-sm"
-                    placeholder={`${form.mode === "Mpesa" ? "Enter Mpesa Code..." : "Enter payment reference..."}`}
+                    placeholder={`${form.modeOfPayment === "Mpesa" ? "Enter Mpesa Code..." : "Enter payment reference..."}`}
                   />
                 </div>
                 <div className="">
@@ -436,11 +678,86 @@ export default function Purchase() {
                     placeholder="e.g. Inv #8892 - Delivery via G4S"
                   />
                 </div>
-                <div className="mt-5 flex justify-end">
-                  <button onClick={handleSave} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition font-semibold text-sm">
-                    Save Purchase Record
-                  </button>
-                </div>
+                {isBulkMode ? (
+                  <div className="col-span-1 md:col-span-2 mt-4 pt-4 border-t border-slate-200 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={handleAddToBatch}
+                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold text-sm flex items-center gap-2 shadow-xs"
+                      >
+                        <span>➕</span>
+                        <span>Add Item to Batch</span>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        {batchItems.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleClearBatch}
+                            className="px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition text-xs font-semibold"
+                          >
+                            Clear Batch ({batchItems.length})
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleSaveBatch}
+                          disabled={batchItems.length === 0}
+                          className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition font-semibold text-sm shadow-xs flex items-center gap-2"
+                        >
+                          <span>💾</span>
+                          <span>Save Entire Batch ({batchItems.length})</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Batch Items Queue Table */}
+                    {batchItems.length > 0 && (
+                      <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 pb-2 border-b border-slate-200">
+                          <span>Items Queued in this Bulk Purchase:</span>
+                          <span className="text-emerald-800 font-bold">
+                            Total: Ksh {formatCurrency(batchItems.reduce((acc, it) => acc + (Number(it.totalCost) || 0), 0))}
+                          </span>
+                        </div>
+                        <div className="divide-y divide-slate-200/80 max-h-56 overflow-y-auto pr-1">
+                          {batchItems.map((item, idx) => (
+                            <div key={item._tempId} className="py-2 flex items-center justify-between gap-2 text-xs">
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-slate-800 truncate">
+                                  {idx + 1}. {item.item} ({item.quantity} {item.units || "units"})
+                                </div>
+                                <div className="text-[11px] text-slate-500">
+                                  {item.supplierName} · {item.cropName} · {item.category}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-slate-900">
+                                  Ksh {formatCurrency(item.totalCost)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFromBatch(item._tempId)}
+                                  className="text-red-500 hover:text-red-700 font-bold p-1 rounded hover:bg-red-50"
+                                  title="Remove from batch"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="col-span-1 md:col-span-2 mt-5 flex justify-end">
+                    <button onClick={handleSave} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition font-semibold text-sm shadow-xs">
+                      Save Purchase Record
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -616,9 +933,148 @@ export default function Purchase() {
               </div>
             </div>
             <div className="lg:mt-[-300px] lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Purchase History ({sortedPurchases.length})</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Purchase History {isGroupedView ? `(${groupedPurchases.length} groups · ${sortedPurchases.length} items)` : `(${sortedPurchases.length})`}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition">
+                    <input
+                      type="checkbox"
+                      checked={isGroupedView}
+                      onChange={(e) => setIsGroupedView(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>Group Bulk Purchases</span>
+                  </label>
+                </div>
+              </div>
+
               {sortedPurchases.length === 0 ? (
                 <div className="text-sm text-slate-400 py-4 text-center">No purchases recorded yet.</div>
+              ) : isGroupedView ? (
+                <div className="space-y-4">
+                  {groupedPurchases.map((group, grpIdx) => {
+                    const isMultiItem = group.isBatch && group.items.length > 1;
+
+                    if (!group.isBatch) {
+                      // Single item purchase record (rendered cleanly as standard card)
+                      const p = group.items[0];
+                      return (
+                        <div key={p._id} className="p-4 border border-slate-100 bg-slate-50 rounded-xl flex flex-col justify-between gap-3 hover:border-slate-300 transition">
+                          <div className="space-y-1">
+                            <div className="font-bold text-slate-900 flex items-center gap-2">
+                              <span>Purchased {p.units} {p.item} {`(${p.quantity})`}</span>
+                              <span className="sm:hidden text-[10px] bg-slate-200 px-2 py-0.5 rounded-full uppercase">{p.category}</span>
+                            </div>
+                            <div className="text-xs text-slate-500 flex flex-col flex-wrap gap-x-3 gap-y-1">
+                              <span>🏢 {p.supplierName}</span>
+                              <span>🌱 {p.cropName}</span>
+                              {p.modeOfPayment && (<span>💰 Paid through {p.modeOfPayment} {p.paymentReference && `(Payment Ref: ${p.paymentReference})`}</span>)}
+                              <span>📅 {new Date(p.date).toLocaleDateString()}</span>
+                            </div>
+                            {p.notes && <div className="text-xs text-slate-400 italic">&quot;{p.notes}&quot;</div>}
+                          </div>
+
+                          <div className="flex items-center gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 justify-between">
+                            <div className="text-right">
+                              <div className="text-base font-bold text-emerald-800">Ksh {formatCurrency(p.totalCost)}</div>
+                            </div>
+                            <button onClick={() => handleDelete(p)} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-xs font-semibold">
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Bulk purchase batch record
+                    return (
+                      <div key={group.batchId || `grp-${grpIdx}`} className="border-2 border-emerald-200 bg-white rounded-xl shadow-xs overflow-hidden">
+                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="bg-emerald-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wide">
+                                📦 Bulk Purchase
+                              </span>
+                              <h3 className="font-bold text-slate-900 text-base">
+                                {group.supplierName}
+                              </h3>
+                              <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                                {group.items.length} items
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                              <span>📅 {new Date(group.date).toLocaleDateString()}</span>
+                              {group.modeOfPayment && (
+                                <span>💰 {group.modeOfPayment} {group.paymentReference && `(${group.paymentReference})`}</span>
+                              )}
+                              {group.notes && <span className="italic">&quot;{group.notes}&quot;</span>}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-emerald-100">
+                            <div className="text-right">
+                              <div className="text-[10px] uppercase font-bold text-slate-400">Batch Total</div>
+                              <div className="text-lg font-black text-emerald-700">
+                                Ksh {formatCurrency(group.totalCost)}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteBatch(group.items)}
+                              className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition text-xs font-semibold"
+                              title="Delete all items in this bulk purchase"
+                            >
+                              Delete Batch
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Items within this bulk batch */}
+                        <details open className="group">
+                          <summary className="px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-600 cursor-pointer flex items-center justify-between hover:bg-slate-100 select-none">
+                            <span>View Batch Breakdown ({group.items.length} items)</span>
+                            <span className="text-slate-400 text-[11px] group-open:rotate-180 transition-transform">▼</span>
+                          </summary>
+                          <div className="divide-y divide-slate-100 p-3 bg-white space-y-1">
+                            {group.items.map((p, idx) => (
+                              <div key={p._id} className="py-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50 rounded-lg transition">
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                                    <span className="text-xs text-slate-400">{idx + 1}.</span>
+                                    <span className="truncate">{p.item}</span>
+                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                      {p.category}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5 pl-4">
+                                    <span>Qty: <strong>{p.quantity}</strong> {p.units || ""}</span>
+                                    <span>🌱 {p.cropName}</span>
+                                    {p.notes && <span className="italic text-slate-400">&quot;{p.notes}&quot;</span>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between sm:justify-end gap-3 pl-4 sm:pl-0">
+                                  <span className="text-sm font-bold text-slate-900 whitespace-nowrap">
+                                    Ksh {formatCurrency(p.totalCost)}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDelete(p)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 rounded hover:bg-red-50"
+                                    title="Delete individual item from batch"
+                                  >
+                                    Delete Item
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="space-y-3">
                   {sortedPurchases.map(p => (
@@ -627,6 +1083,11 @@ export default function Purchase() {
                         <div className="font-bold text-slate-900 flex items-center gap-2">
                           <span>Purchased {p.units} {p.item} {`(${p.quantity})`}</span>
                           <span className="sm:hidden text-[10px] bg-slate-200 px-2 py-0.5 rounded-full uppercase">{p.category}</span>
+                          {p.batchId && (
+                            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">
+                              📦 Bulk Item
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-slate-500 flex flex-col flex-wrap gap-x-3 gap-y-1">
                           <span>🏢 {p.supplierName}</span>
@@ -634,12 +1095,11 @@ export default function Purchase() {
                           {p.modeOfPayment && (<span>💰 Paid through {p.modeOfPayment} {p.paymentReference && `(Payment Ref: ${p.paymentReference})`}</span>)}
                           <span>📅 {new Date(p.date).toLocaleDateString()}</span>
                         </div>
-                        {p.notes && <div className="text-xs text-slate-400 italic">"{p.notes}"</div>}
+                        {p.notes && <div className="text-xs text-slate-400 italic">&quot;{p.notes}&quot;</div>}
                       </div>
 
                       <div className="flex items-center gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 justify-between">
                         <div className="text-right">
-                          <div className="text-xs text-slate-500"></div>
                           <div className="text-base font-bold text-emerald-800">Ksh {formatCurrency(p.totalCost)}</div>
                         </div>
                         <button onClick={() => handleDelete(p)} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-xs font-semibold">
@@ -652,6 +1112,48 @@ export default function Purchase() {
               )}
             </div>
 
+            <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">eTIMS Purchases</h2>
+                  <p className="text-xs text-slate-500">Purchases pulled from KRA through DigiTax. These do not change local expense totals.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadEtimsPurchases}
+                  disabled={loadingEtimsPurchases}
+                  className="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                >
+                  {loadingEtimsPurchases ? "Loading..." : "Load eTIMS Purchases"}
+                </button>
+              </div>
+              {etimsError && <p className="text-sm text-red-600">{etimsError}</p>}
+              {etimsPurchases.length > 0 && (
+                <div className="space-y-3">
+                  {etimsPurchases.map((purchase) => (
+                    <div key={purchase.id} className="p-4 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate">{purchase.supplier_name || "Unknown supplier"}</div>
+                        <div className="text-xs text-slate-500">
+                          Invoice {purchase.invoice_number || purchase.trader_invoice_number || "—"} · {purchase.purchase_date || "—"}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => saveEtimsPurchaseLocally(purchase)}
+                        disabled={purchaseHistory.some((localPurchase) => localPurchase.etimsPurchaseId === purchase.id)}
+                        className="shrink-0 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                      >
+                        {purchaseHistory.some((localPurchase) => localPurchase.etimsPurchaseId === purchase.id) ? "Saved locally" : "Save locally"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!loadingEtimsPurchases && !etimsError && etimsPurchases.length === 0 && (
+                <p className="text-sm text-slate-400">Click “Load eTIMS Purchases” to fetch the latest records.</p>
+              )}
+            </div>
 
             <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">

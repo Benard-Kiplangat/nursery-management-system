@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { db } from "../db";
 import { generateETIMSReceipt } from "../utils/generateReceipt";
 import { showToast } from "../utils/toast";
 
-const config = localStorage.getItem("businessConfig");
-const shopData = {
-  shopName: config.businessName || "Yeli Farm and Nursery",
-  shopAddress: config.address || "Bomet-Nairobi Highway",
-  shopTradeName: config.tradeName || "Leading farm in Bomet & Beyond",
-  shopTel: config.businessTel || "+254 711 555 888",
-  shopPin: config.kraPin || "P051234567M",
-};
+function getShopData(config = {}) {
+  return {
+    shopName: config.businessName || "Yeli Farm and Nursery",
+    shopAddress: config.address || "Bomet-Nairobi Highway",
+    shopTradeName: config.tradeName || "Leading farm in Bomet & Beyond",
+    shopTel: config.businessTel || "+254 711 555 888",
+    shopPin: config.kraPin || "P051234567M",
+  };
+}
 
-const ETIMS_API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const ETIMS_API_URL = "https://yelivate-apis.onrender.com";
 
 function getDigitaxItemId(item) {
   return item.digitaxItemId || item.itemId || item.product?.digitaxItemId;
@@ -35,19 +36,43 @@ function getDigitaxPaymentType(paymentMethod) {
   return /^\d+$/.test(String(paymentMethod || "")) ? String(paymentMethod) : "01";
 }
 
-function getNextInvoiceNumber(prefix) {
-  const counterKey = `${prefix}receipt-invoice-counter`;
-  const current = Number.parseInt(localStorage.getItem(counterKey) || "0", 10);
-  const next = Number.isFinite(current) && current >= 0 ? current + 1 : 1;
-  localStorage.setItem(counterKey, String(next));
-  return `${prefix}-${new Date().getFullYear()}-${String(next).padStart(6, "0")}`;
+async function getNextInvoiceNumber(prefix) {
+  const counterId = `meta:receipt-invoice-counter:${prefix}`;
+  const legacyKey = `${prefix}receipt-invoice-counter`;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let counter;
+    try {
+      counter = await db.get(counterId);
+    } catch (error) {
+      if (error.status !== 404) throw error;
+      const legacyValue = Number.parseInt(localStorage.getItem(legacyKey) || "0", 10);
+      counter = {
+        _id: counterId,
+        type: "receipt-invoice-counter",
+        prefix,
+        value: Number.isFinite(legacyValue) && legacyValue >= 0 ? legacyValue : 0,
+      };
+    }
+
+    const next = Number(counter.value) + 1;
+    try {
+      await db.put({ ...counter, value: next, updatedAt: new Date().toISOString() });
+      localStorage.setItem(legacyKey, String(next));
+      return `${prefix}-${new Date().getFullYear()}-${String(next).padStart(6, "0")}`;
+    } catch (error) {
+      if (error.status !== 409 || attempt === 2) throw error;
+    }
+  }
+
+  throw new Error(`Could not allocate the next ${prefix} invoice number.`);
 }
 
-function renderLocalReceipt(items, invoiceNo) {
+function renderLocalReceipt(items, invoiceNo, config) {
 
   const customer = getSaleCustomer(items);
   generateETIMSReceipt({
-    ...shopData,
+    ...getShopData(config),
     items,
     etims: false,
     invoiceNo,
@@ -101,12 +126,12 @@ async function persistETIMSReceipt(items, receiptPayload) {
   );
 }
 
-async function generateSaleReceipt(items, etimsMode) {
+async function generateSaleReceipt(items, etimsMode, config) {
   if (!items?.length) return;
 
   if (!etimsMode) {
-    const invoiceNo = getNextInvoiceNumber("RCT");
-    renderLocalReceipt(items, invoiceNo);
+    const invoiceNo = await getNextInvoiceNumber("RCT");
+    renderLocalReceipt(items, invoiceNo, config);
     return;
   }
 
@@ -115,7 +140,7 @@ async function generateSaleReceipt(items, etimsMode) {
   if (storedReceipt) {
     console.log(storedReceipt)
     generateETIMSReceipt({
-      ...shopData,
+      ...getShopData(config),
       etims: true,
       ...storedReceipt.receiptPayload
     });
@@ -123,11 +148,12 @@ async function generateSaleReceipt(items, etimsMode) {
   }
 
   const customer = getSaleCustomer(items);
+  const invoiceNo = await getNextInvoiceNumber("ETI");
   const response = await fetch(`${ETIMS_API_URL}/api/etims/create-invoice`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      invoiceNo: getNextInvoiceNumber("ETI"),
+      invoiceNo,
       customerId: customer.digitaxCustomerId,
       items: items.map((item) => ({
         ...item,
@@ -182,17 +208,10 @@ async function generateSaleReceipt(items, etimsMode) {
   await persistETIMSReceipt(items, receiptPayload);
 
   generateETIMSReceipt({
-    ...shopData,
+    ...getShopData(config),
     items,
     etims: true,
     ...receiptPayload,
-  });
-}
-
-function handleReceiptClick(items, etimsMode) {
-  generateSaleReceipt(items, etimsMode).catch((error) => {
-    console.error("DigiTax receipt error", error);
-    showToast(`Could not create receipt: ${error.message}`);
   });
 }
 
@@ -222,7 +241,15 @@ function groupSales(sales) {
   return result;
 }
 
-function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleMarkBulkPaid, etimsMode }) {
+function BulkSaleGroup({
+  group,
+  handleEditSale,
+  handleDeleteSale,
+  handleMarkBulkPaid,
+  onReceiptClick,
+  receiptDisabled,
+  isGeneratingReceipt,
+}) {
   const totalAmount = group.items.reduce((sum, s) => sum + (s.total || 0), 0);
   const totalQty = group.items.reduce((sum, s) => sum + (s.quantity || 0), 0);
   const isCreditSale = group.items[0]?.isCreditSale || false;
@@ -293,10 +320,11 @@ function BulkSaleGroup({ group, handleEditSale, handleDeleteSale, handleMarkBulk
       <div className="mt-2 text-xs text-gray-500">{group.items.length} items — {totalQty} units total</div>
 
       <button
-        onClick={() => handleReceiptClick(group.items, etimsMode)}
+        onClick={() => onReceiptClick(group.items, `bulk-${group.bulkSaleId}`)}
+        disabled={receiptDisabled}
         className="mt-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
       >
-        Receipt
+        {isGeneratingReceipt ? "Generating receipt..." : "Receipt"}
       </button>
     </div>
   );
@@ -312,9 +340,27 @@ export default function SaleList({
   handleDeleteSale,
   handleDeleteSaleWithStockRestore,
   handleMarkBulkPaid,
-  etimsMode
+  etimsMode,
+  config,
 }) {
+  const [generatingReceiptKey, setGeneratingReceiptKey] = useState(null);
+  const receiptInProgressRef = useRef(false);
   const grouped = groupSales(sales);
+
+  const handleReceiptClick = async (items, key) => {
+    if (receiptInProgressRef.current) return;
+    receiptInProgressRef.current = true;
+    setGeneratingReceiptKey(key);
+    try {
+      await generateSaleReceipt(items, etimsMode, config);
+    } catch (error) {
+      console.error("DigiTax receipt error", error);
+      showToast(`Could not create receipt: ${error.message}`);
+    } finally {
+      receiptInProgressRef.current = false;
+      setGeneratingReceiptKey(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2 mt-2">
@@ -393,10 +439,13 @@ export default function SaleList({
 
       {selectedSales.length > 0 && (
         <button
-          onClick={() => handleReceiptClick(selectedSales, etimsMode)}
+          onClick={() => handleReceiptClick(selectedSales, "selected")}
+          disabled={Boolean(generatingReceiptKey)}
           className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
         >
-          Download Group Receipt ({selectedSales.length} items)
+          {generatingReceiptKey === "selected"
+            ? "Generating receipt..."
+            : `Download Group Receipt (${selectedSales.length} items)`}
         </button>
       )}
 
@@ -410,7 +459,9 @@ export default function SaleList({
               handleDeleteSale={handleDeleteSale}
               handleDeleteSaleWithStockRestore={handleDeleteSaleWithStockRestore}
               handleMarkBulkPaid={handleMarkBulkPaid}
-              etimsMode={etimsMode}
+              onReceiptClick={handleReceiptClick}
+              receiptDisabled={Boolean(generatingReceiptKey)}
+              isGeneratingReceipt={generatingReceiptKey === `bulk-${entry.bulkSaleId}`}
             />
           );
         }
@@ -458,10 +509,13 @@ export default function SaleList({
                 </div>
               </div>
               <button
-                onClick={() => handleReceiptClick([sale], etimsMode)}
+                onClick={() => handleReceiptClick([sale], `sale-${sale._id || index}`)}
+                disabled={Boolean(generatingReceiptKey)}
                 className="mt-1 ml-4 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
               >
-                Receipt
+                {generatingReceiptKey === `sale-${sale._id || index}`
+                  ? "Generating receipt..."
+                  : "Receipt"}
               </button>
             </div>
           </div>

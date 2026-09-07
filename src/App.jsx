@@ -1,5 +1,3 @@
-import React from 'react';
-import { useState } from "react";
 import { Routes, Route, Navigate } from 'react-router-dom';
 import POS from './pages/POS';
 import Crops from './pages/Crops';
@@ -11,6 +9,7 @@ import Users from './pages/Users';
 import UserLogin from './components/UserLogin';
 import Navbar from './components/Navbar';
 import BusinessSettings from './pages/BusinessSettings';
+import UserGuide from './pages/UserGuide';
 import { useAuth } from './context/AuthContext';
 import { useBusinessConfig } from './config';
 import './index.css';
@@ -50,6 +49,7 @@ export default function App() {
       <main className="flex-1 min-w-0 p-4 lg:p-8 max-w-7xl mx-auto w-full">
         <Routes>
           <Route path="/login" element={<UserLogin />} />
+          <Route path="/help" element={<UserGuide />} />
           <Route path="/" element={<RequireAuth><POS /></RequireAuth>} />
           <Route path="/crops" element={<CropsRoute><Crops /></CropsRoute>} />
           <Route path="/batches" element={<CropsRoute><Batches /></CropsRoute>} />

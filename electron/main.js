@@ -3,7 +3,6 @@ const express = require("express");
 const backupService = require("./backupService");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 const cors = require("cors");
 
 const { createSqliteDbService } = require("./sqliteDb");
@@ -46,7 +45,8 @@ function startServer() {
         server.use(cors({
     origin: [
         "http://localhost:5003",
-        "http://127.0.0.1:5003"
+        "http://127.0.0.1:5003",
+        "https://yelivate.top"
     ],
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
