@@ -5,15 +5,15 @@ import { showToast } from "../utils/toast";
 import { db } from "../db";
 
 const fieldDefinitions = [
-  { name: "businessName", label: "Business Name", placeholder: "XS Farm" },
-  { name: "businessCode", label: "Business Code", placeholder: "XS" },
+  { name: "businessName", label: "Business Name", placeholder: "Yeli Yeli" },
+  { name: "businessCode", label: "Business Code", placeholder: "YL" },
   { name: "businessTel", label: "Business Contact", placeholder: "+254700000000" },
   { name: "kraPin", label: "KRA PIN", placeholder: "A123456789B" },
   { name: "address", label: "Business Address", placeholder: "Bomet-Nairobi Highway" },
-  { name: "businessDisplayName", label: "Display Name", placeholder: "XS Farm Nursery" },
-  { name: "appName", label: "App Name", placeholder: "XS Farm & Nursery POS" },
-  { name: "systemName", label: "System Name", placeholder: "XS Nursery Management System" },
-  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "XS Farm" },
+  { name: "businessDisplayName", label: "Display Name", placeholder: "Yeli Farm Nursery" },
+  { name: "appName", label: "App Name", placeholder: "Yeli Farm & Nursery POS" },
+  { name: "systemName", label: "System Name", placeholder: "Yeli Nursery Management System" },
+  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "Yeli Farm" },
   { name: "currency", label: "Currency", placeholder: "KES" },
 ];
 
@@ -376,7 +376,7 @@ export default function BusinessSettings() {
             type: "crop",
             name: itemName,
             price,
-            daysToReady: 90,
+            daysToReady: 0,
             minStockThreshold: 25,
             active: true,
             digitaxItemId: itemId,
@@ -541,7 +541,7 @@ export default function BusinessSettings() {
           const newSupplier = {
             _id: `supplier:${Date.now()}:${Math.floor(Math.random() * 10000)}`,
             type: "supplier",
-            name: suppName || "DigiTax Supplier",
+            name: suppName || "Supplier",
             krapin: suppTin,
             phone: dSupp.phone || "",
             email: dSupp.email || "",

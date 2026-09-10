@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, getBatches, availableQuantityForCrop, getStockAlertStatus } from "../db";
 import SyncButton from "../components/SyncButton";
-import SeedDataButton from "../components/SeedDataButton";
 
 export default function Crops() {
   const navigate = useNavigate();
@@ -111,7 +110,6 @@ export default function Crops() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-           <SeedDataButton onComplete={() => { loadCrops(); loadBatches(); }} />
           <SyncButton />
         </div>
       </div>

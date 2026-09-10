@@ -2,15 +2,15 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 const PUBLIC_APP_CONFIG_URL = `${import.meta.env.BASE_URL}config/app-config.json`;
 const fallbackConfig = {
-  businessCode: "YL",
-  businessName: "Yeli Farm",
+  businessCode: "XS",
+  businessName: "XS Farm",
   businessTel: "+254700000000",
-  businessDisplayName: "Yeli Farm Nursery",
-  appName: "Yeli Farm & Nursery POS",
-  systemName: "Yeli Nursery Management System",
+  businessDisplayName: "XS Farm Nursery",
+  appName: "XS Farm & Nursery POS",
+  systemName: "XS Nursery Management System",
   kraPin: "A123456789B",
-  address: "Bomet-Nairobi Highway",
-  transactionDescription: "Yeli Farm POS payment",
+  address: "Located 300M from Chebirbelek town",
+  transactionDescription: "XS Farm POS payment",
   currency: "KES",
 };
 export const DEFAULT_APP_CONFIG = Object.freeze(fallbackConfig);

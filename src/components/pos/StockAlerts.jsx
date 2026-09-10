@@ -2,7 +2,7 @@ import React from "react";
 
 export function StockAlertPreview({ count, onOpen }) {
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm">
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between shadow-sm max-w-xl">
       <div className="flex items-center gap-2">
         <span className="text-lg">⚠️</span>
         <div>

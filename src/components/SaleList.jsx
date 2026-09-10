@@ -70,10 +70,15 @@ async function getNextInvoiceNumber(prefix) {
 
 function renderLocalReceipt(items, invoiceNo, config) {
 
+  const total = items.reduce((sum, item) => item.total + sum, 0);
+  const totalDiscount = items.reduce((sum, item) => item.discount + sum, 0);
+
   const customer = getSaleCustomer(items);
   generateETIMSReceipt({
     ...getShopData(config),
     items,
+    totalDiscount,
+    totalBeforeDiscount: total + totalDiscount,
     etims: false,
     invoiceNo,
     receiptNumber: invoiceNo,
@@ -172,9 +177,8 @@ async function generateSaleReceipt(items, etimsMode, config) {
   const totalDiscount = result.invoice.item_list.reduce((sum, item) => sum + item.discount_amount, 0);
   const totalTaxableAmount = result.invoice.item_list.reduce((sum, item) => sum + item.taxable_amount, 0);
   const totalTax = result.invoice.item_list.reduce((sum, item) => sum + item.tax_amount, 0);
-  const subtotal = result.invoice.item_list.reduce((sum, item) => sum + item.total_amount, 0) - totalDiscount;
-  const total = subtotal + totalTax;
-  const totalBeforeDiscount = subtotal + totalDiscount;
+  const totalBeforeDiscount = result.invoice.item_list.reduce((sum, item) => sum + item.total_amount, 0);
+  const total = totalBeforeDiscount + totalTax - totalDiscount;
   const appendedNameitems = result.invoice.item_list.map((item, index) => ({
     ...item,
     name: `${items[index]?.name || "Unknown"}`,
@@ -190,7 +194,6 @@ async function generateSaleReceipt(items, etimsMode, config) {
     cuTime: sale.time,
     totalBeforeDiscount,
     totalDiscount,
-    subtotal,
     totalTax,
     totalTaxableAmount,
     total,
@@ -307,7 +310,7 @@ function BulkSaleGroup({
           <div key={idx} className="bg-white rounded p-2 flex justify-between items-center">
             <div>
               <span className="font-medium text-sm">{sale.quantity} {sale.name}</span>
-              <span className="text-xs text-gray-500 ml-2">@ Ksh {sale.sellingPrice} = Ksh {sale.total}</span>
+              <span className="text-xs text-gray-500 ml-2">@ Ksh {sale.sellingPrice} {sale.discount ? `with a discount of ${sale.discount})` : '' } = Ksh {sale.total}</span>
             </div>
             <div className="flex gap-2 text-xs">
               <button onClick={() => handleEditSale(sale)} className="text-green-600">Edit</button>
@@ -317,7 +320,8 @@ function BulkSaleGroup({
         ))}
       </div>
 
-      <div className="mt-2 text-xs text-gray-500">{group.items.length} items — {totalQty} units total</div>
+      <div className="mt-2 text-xs text-gray-500 flex justify-between">
+        <span>{group.items.length} items, {totalQty} units total</span>
 
       <button
         onClick={() => onReceiptClick(group.items, `bulk-${group.bulkSaleId}`)}
@@ -326,6 +330,7 @@ function BulkSaleGroup({
       >
         {isGeneratingReceipt ? "Generating receipt..." : "Receipt"}
       </button>
+      </div>
     </div>
   );
 }
@@ -383,7 +388,7 @@ export default function SaleList({
                         <span className="font-semibold">{entry.items[0]?.customerName || <span className="italic text-gray-400">No name</span>}</span>
                       </div>
                       {entry.items.map((s, i) => (
-                        <div key={i} className="text-sm text-gray-700">{s.quantity} {s.name} — Ksh {s.total}</div>
+                        <div key={i} className="text-sm text-gray-700">{s.quantity} {s.name} — Ksh {s.total} {s.discount ? `(discount ${s.discount})` : '' }</div>
                       ))}
                       <div className="text-sm text-gray-600 mt-1">
                         Total: Ksh {bulkTotal}
@@ -496,7 +501,7 @@ export default function SaleList({
                   <span className="px-1">
                     {new Date(sale.timestamp).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
-                  for {sale.total}{(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " shillings with a deposit of Ksh." + sale.dwnPayment : " shillings with no down payment" : "shillings"}
+                  for {sale.total} {" shillings"} {sale.discount ? ` with a discount of ${sale.discount}` : ""} {(sale.isCreditSale || sale.isPresale) ? sale.dwnPayment ? " and a deposit of " + sale.dwnPayment : " with no down payment" : ""}
                 </div>
                 {sale.customerName && (
                   <div className="text-sm text-yellow-700 font-medium mt-0.5">

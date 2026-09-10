@@ -45,16 +45,6 @@ export default function ProductCard({
           <div>
             <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
               <span className="truncate">{product.name}</span>
-              <span
-                className={`${alertInfo.status === "out_of_stock"
-                    ? "badge-danger"
-                    : alertInfo.status === "low_stock"
-                      ? "badge-warning"
-                      : "badge-success"} sm:hidden`
-                }
-              >
-                {alertInfo.label}
-              </span>
             </div>
             <div className="text-[11px] text-slate-500 mt-0.5">
               Ksh {Number(product.price || 0).toLocaleString()} each · Matures in{" "}
@@ -70,7 +60,7 @@ export default function ProductCard({
                   : "badge-success"
             }`}
           >
-            {alertInfo.label}
+                          {available} in stock
           </span>
         </div>
 

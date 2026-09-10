@@ -288,6 +288,6 @@ export function getStockAlertStatus(crop, availableQty) {
   const threshold = crop.minStockThreshold !== undefined ? Number(crop.minStockThreshold) : 25;
   if (availableQty <= 0) return { status: "out_of_stock", label: "Out of Stock", level: 0 };
   if (availableQty <= threshold) return { status: "low_stock", label: `Low Stock`, level: 1 };
-  return { status: "ok", label: "Stock OK", level: 2 };
+  return { status: "ok", label: "Stock Ok", level: 2 };
 }
 

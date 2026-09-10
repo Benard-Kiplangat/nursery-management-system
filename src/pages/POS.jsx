@@ -192,7 +192,7 @@ export default function POS() {
               onDismiss={() => setShowUpcoming(false)}
             />
           )}
-          <div id="pos-cart" className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div id="pos-cart" className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-w-xl">
             <Cart
               cart={cart}
               onUpdateQty={handleCartUpdateQty}

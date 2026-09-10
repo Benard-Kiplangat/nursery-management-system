@@ -43,10 +43,8 @@ export const generateETIMSReceipt = (receipt) => {
     // -------------------------------------------------------
     totalBeforeDiscount = 0,
     totalDiscount = 0,
-    subtotal = 0,
     totalTax = 0,
     total = 0,
-    totalTaxableAmount = 0,
 
     // -------------------------------------------------------
     // TAX
@@ -665,7 +663,7 @@ export const generateETIMSReceipt = (receipt) => {
   );
 
    doc.text(
-    "TAXABLE",
+    etims ? "TAXABLE" : "DISCOUNT",
     64,
     y,
     { align: "right" }
@@ -712,6 +710,10 @@ export const generateETIMSReceipt = (receipt) => {
       const taxableAmount = Number(
       sale.taxable_amount ?? 0
     );
+
+    const discount = Number(
+      sale.discount ?? 0
+    )
 
     /*
      * Use supplied unit price when available.
@@ -796,7 +798,7 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
     doc.text(
-      money(taxableAmount),
+      money(etims ? taxableAmount : discount),
       64,
       y,
       { align: "right" }
@@ -836,20 +838,13 @@ export const generateETIMSReceipt = (receipt) => {
     Number(totalDiscount || 0) !== 0
   ) {
     drawLeftTotal(
-      "Discount",
+      "Total Discount",
       -Math.abs(
         Number(totalDiscount)
       ),
       true
     );
   }
-
-  drawLeftTotal(
-    "Subtotal",
-    subtotal || items.bulkTotal || items[0]?.total, true
-  );
-
-y -= 1;
 
   etims && drawLine()
 
@@ -947,7 +942,7 @@ y -= 1;
 
   if (etims) {
     drawLeftTotal(
-    "Total",
+    "Total to Pay",
     (total || items[0]?.bulkTotal || items[0].total),
     true
   );

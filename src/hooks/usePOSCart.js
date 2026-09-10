@@ -71,8 +71,8 @@ export function usePOSCart({
     }
 
     const subtotal = qty * Number(product.price || 0);
-    const discountAmount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
-    const total = subtotal - discountAmount;
+    const discount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
+    const total = subtotal - discount;
     const now = new Date().toISOString();
     const initialPayment = Number(downPayment[product._id] || 0);
     const selectedCustomer = findCustomerByName(customerNames[product._id]);
@@ -84,8 +84,8 @@ export function usePOSCart({
       quantity: qty,
       total,
       sellingPrice: product.price,
-      discountAmount,
-      discountRate: subtotal > 0 ? (discountAmount / subtotal) * 100 : 0,
+      discount,
+      discountRate: subtotal > 0 ? (discount / subtotal) * 100 : 0,
       timestamp: now,
       isCreditSale,
       isPresale,
@@ -137,7 +137,7 @@ export function usePOSCart({
     const qty = Math.max(1, parseInt(quantities[product._id], 10) || 1);
     const price = product.price;
     const subtotal = qty * Number(price || 0);
-    const discountAmount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
+    const discount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
     const isPresale = presales[product._id] || false;
 
     if (cart.length > 0) {
@@ -179,11 +179,11 @@ export function usePOSCart({
               qty: item.qty + qty,
               sellingPrice: price,
               isPresale,
-              discountAmount: Number(item.discountAmount || 0) + discountAmount,
+              discount: Number(item.discount || 0) + discount,
             }
           : item);
       }
-      return [...prev, { product, batch, qty, isPresale, sellingPrice: price, discountAmount }];
+      return [...prev, { product, batch, qty, isPresale, sellingPrice: price, discount }];
     });
 
     if (isPresale) {
@@ -205,7 +205,7 @@ export function usePOSCart({
       const subtotal = item.qty * Number(item.sellingPrice || item.product.price || 0);
       return {
         ...item,
-        discountAmount: Math.min(subtotal, Math.max(0, Number(discount) || 0)),
+        discount: Math.min(subtotal, Math.max(0, Number(discount) || 0)),
       };
     }));
   };
@@ -248,8 +248,8 @@ export function usePOSCart({
       const item = cart[i];
       const product = products.find(p => p._id === item.product._id) || item.product;
       const subtotal = item.qty * item.sellingPrice;
-      const discountAmount = Math.min(subtotal, Math.max(0, Number(item.discountAmount || 0)));
-      const total = subtotal - discountAmount;
+      const discount = Math.min(subtotal, Math.max(0, Number(item.discount || 0)));
+      const total = subtotal - discount;
       const selectedCustomer = findCustomerByName(customerName);
       const sale = {
         _id: `${bulkSaleId}-${i}`,
@@ -259,8 +259,8 @@ export function usePOSCart({
         quantity: item.qty,
         total,
         sellingPrice: item.sellingPrice,
-        discountAmount,
-        discountRate: subtotal > 0 ? (discountAmount / subtotal) * 100 : 0,
+        discount,
+        discountRate: subtotal > 0 ? (discount / subtotal) * 100 : 0,
         timestamp: bulkSaleId,
         isCreditSale,
         isPresale: item.isPresale,
@@ -308,7 +308,7 @@ export function usePOSCart({
     }
 
     const totalAmount = cart.reduce(
-      (sum, item) => sum + item.qty * item.sellingPrice - Number(item.discountAmount || 0),
+      (sum, item) => sum + item.qty * item.sellingPrice - Number(item.discount || 0),
       0
     );
     setCart([]);

@@ -3,7 +3,7 @@ import { getBatchDisplayName } from "../../db";
 
 export default function UpcomingHarvests({ batches, onDismiss }) {
   return (
-    <div className="bg-white border border-emerald-200 rounded-2xl shadow-sm">
+    <div className="bg-white border border-emerald-200 rounded-2xl shadow-sm max-w-xl">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="font-bold text-emerald-800">🌱 Upcoming Harvests</h2>
         <button

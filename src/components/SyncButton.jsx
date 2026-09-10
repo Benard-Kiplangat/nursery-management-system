@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { db } from "../db";
 import SyncModal from "./SyncModal";
 import { subscribeSyncStatus } from "../utils/syncService";
+
 // Helpers
 // --------------------------------------------------
 
@@ -48,17 +49,6 @@ export default function SyncButton() {
 
   const formatProgress = (value) =>
     Math.max(0, Math.min(100, Math.round(value)));
-
-  //FILE EXPOT
-  const handleBackupFile = async () => {
-    try {
-      handleBackup();
-    }
-    catch (err) {
-      console.error("Backup failed:", err);
-      alert(`Backup failed: ${err.message}`);
-    }
-  };
 
   // EXPORT / RESTORE ELECTRON DB
   const handleBackupDB = async () => {
@@ -107,15 +97,6 @@ export default function SyncButton() {
     a.download = `zippos-export-${new Date().toISOString()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleRestoreFile = async () => {
-    try {
-      fileInputRef.current?.click();
-    } catch (err) {
-      console.error("Restore failed:", err);
-      alert(`Restore failed: ${err.message}`);
-    }
   };
 
   const handleRestoreDB = async () => {
@@ -303,26 +284,14 @@ export default function SyncButton() {
         onClick={handleBackupDB}
         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors"
       >
-        Export DB
-      </button>
-      <button
-        onClick={handleBackupFile}
-        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors"
-      >
-        Export File
+        Create Backup
       </button>
 
       <button
         onClick={handleRestoreDB}
         className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors"
       >
-        Import DB
-      </button>
-      <button
-        onClick={handleRestoreFile}
-        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors"
-      >
-        Import File
+        Restore Backup
       </button>
 
       <input

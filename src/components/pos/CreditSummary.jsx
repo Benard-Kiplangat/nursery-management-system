@@ -2,7 +2,7 @@ import React from "react";
 
 export default function CreditSummary({ customerCredits, grandCreditTotal }) {
   return (
-    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-3">
+    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-3 max-w-xl">
       <h2 className="text-base font-bold text-amber-900 flex items-center justify-between">
         <span>📋 Customer Debts</span>
         <span className="badge-warning">Ksh {grandCreditTotal.toLocaleString()}</span>
