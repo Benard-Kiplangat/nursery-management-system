@@ -6,11 +6,10 @@ import { getEligibleBatches, selectBatch } from "../utils/batchSelection";
 export function usePOSCart({
   products,
   batches,
-  customers,
   currentUser,
   selectedBatches,
   quantities,
-  discounts = {},
+  sellingPrices = {},
   creditSales,
   presales,
   customerNames,
@@ -19,7 +18,7 @@ export function usePOSCart({
   setCreditSales,
   setPresales,
   setCustomerNames,
-  setDiscounts,
+  setSellingPrices,
   setDownPayment,
   setSelectedBatches,
   findCustomerByName,
@@ -70,8 +69,20 @@ export function usePOSCart({
       return;
     }
 
-    const subtotal = qty * Number(product.price || 0);
-    const discount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
+    let sellingPrice;
+
+    if (sellingPrices[product._id]) {
+      sellingPrice = Number(sellingPrices[product._id]);
+    } else {
+       sellingPrice = product.price;
+    }
+
+    console.log(sellingPrices)
+  
+    const subtotal = qty * product.price;
+    console.log(sellingPrice, subtotal)
+    const discount = Math.max(subtotal - (sellingPrice * qty), 0);
+    console.log(discount)
     const total = subtotal - discount;
     const now = new Date().toISOString();
     const initialPayment = Number(downPayment[product._id] || 0);
@@ -83,7 +94,7 @@ export function usePOSCart({
       digitaxItemId: product.digitaxItemId || product.itemId || null,
       quantity: qty,
       total,
-      sellingPrice: product.price,
+      sellingPrice,
       discount,
       discountRate: subtotal > 0 ? (discount / subtotal) * 100 : 0,
       timestamp: now,
@@ -105,6 +116,8 @@ export function usePOSCart({
       batchId: batch._id,
       batchDatePlanted: batch.datePlanted,
     };
+
+    console.log(sale);
 
     try {
       if (!isPresale) await deductFromBatch(batch._id, qty);
@@ -128,16 +141,14 @@ export function usePOSCart({
     setCreditSales({});
     setPresales({});
     setCustomerNames({});
-    setDiscounts(prev => ({ ...prev, [product._id]: 0 }));
+    setSellingPrices({});
     setDownPayment({});
     setSelectedBatches({});
   };
 
   const handleAddToCart = async (product) => {
     const qty = Math.max(1, parseInt(quantities[product._id], 10) || 1);
-    const price = product.price;
-    const subtotal = qty * Number(price || 0);
-    const discount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
+    const price = product.sellingPrice || product.price;
     const isPresale = presales[product._id] || false;
 
     if (cart.length > 0) {
@@ -179,16 +190,17 @@ export function usePOSCart({
               qty: item.qty + qty,
               sellingPrice: price,
               isPresale,
-              discount: Number(item.discount || 0) + discount,
             }
           : item);
       }
-      return [...prev, { product, batch, qty, isPresale, sellingPrice: price, discount }];
+      return [...prev, { product, batch, qty, isPresale, sellingPrice: price}];
     });
 
     if (isPresale) {
       setPresales(prev => ({ ...prev, [product._id]: false }));
     }
+    setSellingPrices({});
+    setQuantities({});
     showToast(`${product.name} added to cart`);
   };
 
@@ -198,16 +210,10 @@ export function usePOSCart({
     )));
   };
 
-  const handleCartUpdateDiscount = (batchId, discount) => {
-    setCart(prev => prev.map(item => {
-      if (item.batch._id !== batchId) return item;
-
-      const subtotal = item.qty * Number(item.sellingPrice || item.product.price || 0);
-      return {
-        ...item,
-        discount: Math.min(subtotal, Math.max(0, Number(discount) || 0)),
-      };
-    }));
+    const handleCartUpdatePrice = (batchId, price) => {
+    setCart(prev => prev.map(item => (
+      item.batch._id === batchId ? { ...item, sellingPrice: Number(price) } : item
+    )));
   };
 
   const handleCartRemoveItem = batchId => {
@@ -246,9 +252,11 @@ export function usePOSCart({
 
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
-      const product = products.find(p => p._id === item.product._id) || item.product;
-      const subtotal = item.qty * item.sellingPrice;
-      const discount = Math.min(subtotal, Math.max(0, Number(item.discount || 0)));
+      const qty = item.qty;
+      const product = item.product || products.find(p => p._id === item.product._id);
+      const sellingPrice = item.sellingPrice > product.price ? item.sellingPrice : product.price;
+    const subtotal = qty * sellingPrice;
+    const discount = Math.max(subtotal - Number(item.sellingPrice * qty), 0);
       const total = subtotal - discount;
       const selectedCustomer = findCustomerByName(customerName);
       const sale = {
@@ -306,9 +314,10 @@ export function usePOSCart({
       salesToPut[i].bulkTotal = bulkTotal;
       await db.put(salesToPut[i]);
     }
+    console.log(salesToPut)
 
     const totalAmount = cart.reduce(
-      (sum, item) => sum + item.qty * item.sellingPrice - Number(item.discount || 0),
+      (sum, item) => sum + item.qty * item.sellingPrice,
       0
     );
     setCart([]);
@@ -324,7 +333,7 @@ export function usePOSCart({
     handleSell,
     handleAddToCart,
     handleCartUpdateQty,
-    handleCartUpdateDiscount,
+    handleCartUpdatePrice,
     handleCartRemoveItem,
     handleCartClear,
     handleCartSale,

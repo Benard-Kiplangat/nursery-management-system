@@ -6,7 +6,7 @@ import AddCustomerModal from "./AddCustomerModal";
 export default function Cart({
   cart,
   onUpdateQty,
-  onUpdateDiscount,
+  onUpdatePrice,
   onRemoveItem,
   onClearCart,
   onMakeSale,
@@ -301,8 +301,7 @@ const refreshMpesaStatus = async () => {
     (sum, item) =>
       sum +
       item.qty *
-      (item.sellingPrice || item.product.price) -
-      Number(item.discountAmount || 0),
+      (item.sellingPrice || item.product.price),
     0
   );
 
@@ -570,7 +569,7 @@ const refreshMpesaStatus = async () => {
 
                 <div className="flex gap-1 items-center flex-wrap">
                   <label className="text-xs text-gray-500">
-                    Qty
+                    Qty:
                   </label>
 
                   <input
@@ -589,23 +588,17 @@ const refreshMpesaStatus = async () => {
                     }
                   />
 
-                  <span className="text-xs text-gray-500">
-                    Ksh {Number(item.sellingPrice ?? item.product.price).toLocaleString()}
-                  </span>
-
                   <label className="text-xs text-gray-500">
-                    Discount
+                    Price:
                   </label>
 
                   <input
                     type="number"
-                    min="0"
-                    max={item.qty * Number(item.sellingPrice ?? item.product.price)}
-                    className="border p-1 w-16 rounded text-sm"
-                    value={item.discountAmount ?? ""}
-                    placeholder="0"
+                    min="1"
+                    className="border p-1 w-12 rounded text-sm"
+                    value={item.sellingPrice ?? item.product.price}
                     onChange={e =>
-                      onUpdateDiscount(
+                      onUpdatePrice(
                         item.batch._id,
                         e.target.value
                       )
@@ -615,8 +608,7 @@ const refreshMpesaStatus = async () => {
                   <span className="text-sm font-semibold">
                     ={" "}
                     {(
-                      item.qty * (item.sellingPrice || item.product.price) -
-                      Number(item.discountAmount || 0)
+                      item.qty * (item.sellingPrice || item.product.price)
                     ).toLocaleString()}
                   </span>
                 </div>
@@ -843,10 +835,6 @@ const refreshMpesaStatus = async () => {
           {/* Complete sale */}
           <button
             onClick={handleSale}
-            disabled={
-              paymentMethod === "mpesa" &&
-              !mpesaPayment
-            }
             className={`text-white px-3 py-2 rounded font-semibold w-full ${isCredit
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-purple-600 hover:bg-purple-700"
@@ -1083,19 +1071,8 @@ const refreshMpesaStatus = async () => {
       {/* MANUAL PAYMENT */}
       {/* ============================= */}
 
-      {mpesaStatus !== "success" && (
         <div className="mt-4">
-          {!showManualMpesa ? (
-            <button
-              type="button"
-              onClick={() => setShowManualMpesa(true)}
-              className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg py-2.5 text-sm font-medium transition"
-            >
-              + Add manual M-PESA receipt
-            </button>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 mb-4">
+           <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-slate-200" />
 
                 <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-medium">
@@ -1106,20 +1083,7 @@ const refreshMpesaStatus = async () => {
               </div>
 
               <div className="border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-slate-800">
-                    Manual M-PESA Payment
-                  </h3>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowManualMpesa(false)}
-                    className="text-xs text-slate-500 hover:text-slate-700"
-                  >
-                    Hide
-                  </button>
-                </div>
-
+              
                 <p className="text-xs text-slate-500 mb-3">
                   Use this if the customer already paid or
                   the STK Push failed.
@@ -1166,10 +1130,7 @@ const refreshMpesaStatus = async () => {
                   Save Manual Payment
                 </button>
               </div>
-            </>
-          )}
-        </div>
-      )}
+             </div>
 
       {/* Footer */}
       <div className="flex gap-2 mt-4">

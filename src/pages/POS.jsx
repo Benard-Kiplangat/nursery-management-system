@@ -14,8 +14,8 @@ export default function POS() {
   const [selectedBatches, setSelectedBatches] = useState({});
   const [search, setSearch] = useState("");
   const [downPayment, setDownPayment] = useState({});
+  const [sellingPrices, setSellingPrices] = useState({});
   const [quantities, setQuantities] = useState({});
-  const [discounts, setDiscounts] = useState({});
   const [creditSales, setCreditSales] = useState({});
   const [presales, setPresales] = useState({});
   const [customerNames, setCustomerNames] = useState({});
@@ -41,7 +41,7 @@ export default function POS() {
     handleSell,
     handleAddToCart,
     handleCartUpdateQty,
-    handleCartUpdateDiscount,
+    handleCartUpdatePrice,
     handleCartRemoveItem,
     handleCartClear,
     handleCartSale,
@@ -52,17 +52,17 @@ export default function POS() {
     currentUser,
     selectedBatches,
     quantities,
-    discounts,
     creditSales,
     presales,
     customerNames,
     downPayment,
+    sellingPrices,
     setQuantities,
     setCreditSales,
     setPresales,
     setCustomerNames,
-    setDiscounts,
     setDownPayment,
+    setSellingPrices,
     setSelectedBatches,
     findCustomerByName,
     loadProducts,
@@ -103,12 +103,12 @@ export default function POS() {
     setCustomerNames(prev => ({ ...prev, [productId]: customerName }));
   };
 
-  const handleDiscountChange = (productId, discount) => {
-    setDiscounts(prev => ({ ...prev, [productId]: Math.max(0, Number(discount) || 0) }));
-  };
-
   const handleQuantityChange = (productId, quantity) => {
     setQuantities(prev => ({ ...prev, [productId]: quantity }));
+  };
+
+  const handlePriceChange = (productId, sellingPrice) => {
+    setSellingPrices(prev => ({ ...prev, [productId]: sellingPrice }));
   };
 
   const handlePresaleToggle = productId => {
@@ -167,18 +167,18 @@ export default function POS() {
             availableBatchesByCrop={availableBatchesByCrop}
             selectedBatches={selectedBatches}
             quantities={quantities}
-            discounts={discounts}
             creditSales={creditSales}
             presales={presales}
             customerNames={customerNames}
+            sellingPrices={sellingPrices}
             downPayment={downPayment}
             customers={customers}
             onBatchChange={handleBatchChange}
             onCustomerChange={handleCustomerChange}
-            onDiscountChange={handleDiscountChange}
             onQuantityChange={handleQuantityChange}
             onPresaleToggle={handlePresaleToggle}
             onCreditToggle={handleCreditToggle}
+            onPriceChange={handlePriceChange}
             onDownPaymentChange={handleDownPaymentChange}
             onSell={handleSell}
             onAddToCart={handleAddToCart}
@@ -196,7 +196,7 @@ export default function POS() {
             <Cart
               cart={cart}
               onUpdateQty={handleCartUpdateQty}
-              onUpdateDiscount={handleCartUpdateDiscount}
+              onUpdatePrice={handleCartUpdatePrice}
               onRemoveItem={handleCartRemoveItem}
               onClearCart={handleCartClear}
               onMakeSale={handleCartSale}

@@ -8,7 +8,7 @@ export default function ProductCard({
   availableBatches,
   selectedBatches,
   quantities,
-  discounts,
+  sellingPrices,
   creditSales,
   presales,
   customerNames,
@@ -16,7 +16,7 @@ export default function ProductCard({
   customers,
   onBatchChange,
   onCustomerChange,
-  onDiscountChange,
+  onPriceChange,
   onQuantityChange,
   onPresaleToggle,
   onCreditToggle,
@@ -25,9 +25,8 @@ export default function ProductCard({
   onAddToCart
 }) {
   const qty = quantities[product._id] || 1;
-  const subtotal = qty * Number(product.price || 0);
-  const discount = Math.min(subtotal, Math.max(0, Number(discounts[product._id] || 0)));
-  const total = subtotal - discount;
+  const subtotal = qty * Number(sellingPrices[product._id] || product.price);
+  const total = subtotal;
   const available = availableBatches.reduce(
     (sum, batch) => sum + Number(batch.availableForSale || 0),
     0
@@ -102,34 +101,34 @@ export default function ProductCard({
       <div className="rounded-lg bg-slate-50 border border-slate-100 p-1.5 space-y-1.5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 items-end">
           <label className="text-xs text-slate-500 font-semibold">
+            Price (Ksh)
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="Price"
+              className="input-field mt-0.5 text-sm py-1.5"
+              value={sellingPrices[product._id] ?? product.price}
+              onChange={e => onPriceChange(product._id, e.target.value)}
+            />
+          </label>
+          <label className="text-xs text-slate-500 font-semibold">
             Quantity
             <input
               type="number"
               min="1"
               step="1"
+              max={available}
               className="input-field mt-0.5 text-sm py-1.5"
               value={quantities[product._id] ?? 1}
               onChange={e => onQuantityChange(product._id, e.target.value)}
-            />
-          </label>
-          <label className="text-xs text-slate-500 font-semibold">
-            Discount (Ksh)
-            <input
-              type="number"
-              min="0"
-              max={subtotal}
-              step="1"
-              placeholder="0"
-              className="input-field mt-0.5 text-sm py-1.5"
-              value={discounts[product._id] ?? ""}
-              onChange={e => onDiscountChange(product._id, e.target.value)}
             />
           </label>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-1.5">
         <div className="flex items-center gap-1.5">
-            <label className="flex items-center gap-1 text-[11px] text-slate-600 bg-emerald-50 px-2 py-1 rounded-md cursor-pointer">
+            <label className="flex items-center gap-1 text-[11px] text-slate-600 bg-emerald-50 px-2 py-1 rounded-md cursor-pointer border border-slate-200">
               <input
                 type="checkbox"
                 checked={presales[product._id] || false}
@@ -138,7 +137,7 @@ export default function ProductCard({
               />
               <span>Presale</span>
             </label>
-            <label className="flex items-center gap-1 text-[11px] text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-md cursor-pointer">
+            <label className="flex items-center gap-1 text-[11px] text-slate-600 bg-emerald-50 border border-slate-200 px-2 py-1 rounded-md cursor-pointer">
               <input
                 type="checkbox"
                 checked={creditSales[product._id] || false}

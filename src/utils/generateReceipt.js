@@ -956,6 +956,8 @@ export const generateETIMSReceipt = (receipt) => {
     true
   );
 
+  y -= 1.5;
+
   /*
    * =========================================================
    * eTIMS SCU INFORMATION

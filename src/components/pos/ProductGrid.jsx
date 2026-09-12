@@ -7,6 +7,7 @@ export default function ProductGrid({
   availableBatchesByCrop,
   selectedBatches,
   quantities,
+  sellingPrices,
   discounts,
   creditSales,
   presales,
@@ -17,6 +18,7 @@ export default function ProductGrid({
   onCustomerChange,
   onDiscountChange,
   onQuantityChange,
+  onPriceChange,
   onPresaleToggle,
   onCreditToggle,
   onDownPaymentChange,
@@ -33,6 +35,7 @@ export default function ProductGrid({
           availableBatches={availableBatchesByCrop[product._id] || []}
           selectedBatches={selectedBatches}
           quantities={quantities}
+          sellingPrices={sellingPrices}
           discounts={discounts}
           creditSales={creditSales}
           presales={presales}
@@ -43,6 +46,7 @@ export default function ProductGrid({
           onCustomerChange={onCustomerChange}
           onDiscountChange={onDiscountChange}
           onQuantityChange={onQuantityChange}
+          onPriceChange={onPriceChange}
           onPresaleToggle={onPresaleToggle}
           onCreditToggle={onCreditToggle}
           onDownPaymentChange={onDownPaymentChange}

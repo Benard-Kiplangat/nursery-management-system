@@ -343,6 +343,7 @@ export default function Sales() {
                 >
                   <input
                     type="checkbox"
+                    readOnly
                     checked={showCreditList}
                     className=""
                   />
