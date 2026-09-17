@@ -17,7 +17,7 @@ export default function Cart({
   const [isCredit, setIsCredit] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [dwnPayment, setDwnPayment] = useState("");
-  const [mpesaProcessing, setMpesaProcessing] = useState(false); 
+  const [mpesaProcessing, setMpesaProcessing] = useState(false);
   const [mpesaStatus, setMpesaStatus] = useState(null);
   const [mpesaFailureReason, setMpesaFailureReason] = useState("");
   const [showManualMpesa, setShowManualMpesa] = useState(false);
@@ -37,265 +37,265 @@ export default function Cart({
     mpesaSaleStatus: "idle"
   });
 
-const {
-  form: customerForm,
-  saving: savingCustomer,
-  handleFormChange,
-  resetForm,
-  saveCustomer,
-} = useCustomerData();
+  const {
+    form: customerForm,
+    saving: savingCustomer,
+    handleFormChange,
+    resetForm,
+    saveCustomer,
+  } = useCustomerData();
 
-const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
 
-const initiateMpesaPayment = async () => {
-  const phone = mpesaDraft.phone.trim();
-  const amount = Number(mpesaDraft.amount);
+  const initiateMpesaPayment = async () => {
+    const phone = mpesaDraft.phone.trim();
+    const amount = Number(mpesaDraft.amount);
 
-  if (!phone) {
-    alert("Enter the customer's M-PESA number.");
-    return;
-  }
-
-  if (!amount || amount <= 0) {
-    alert("Enter a valid payment amount.");
-    return;
-  }
-
-  try {
-    setMpesaProcessing(true);
-    setMpesaStatus("pending");
-    setMpesaFailureReason("");
-
-    let phoneNumber = "254708374149" // phone.replace(/\D/g, "");
-
-    if (phoneNumber.startsWith("0")) {
-      phoneNumber = "254" + phoneNumber.substring(1);
+    if (!phone) {
+      alert("Enter the customer's M-PESA number.");
+      return;
     }
 
-    if (!phoneNumber.startsWith("254")) {
-      throw new Error(
-        "Enter a valid Kenyan M-PESA number."
-      );
+    if (!amount || amount <= 0) {
+      alert("Enter a valid payment amount.");
+      return;
     }
 
-    const response = await fetch(
-      `https://yelivate-apis.onrender.com/api/mpesa/stkpush?business=${config.businessCode}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          phoneNumber,
-          amount,
-          accountReference: `SALE-${Date.now()}`,
-          transactionDesc: config.transactionDescription
-        })
+    try {
+      setMpesaProcessing(true);
+      setMpesaStatus("pending");
+      setMpesaFailureReason("");
+
+      let phoneNumber = "254708374149" // phone.replace(/\D/g, "");
+
+      if (phoneNumber.startsWith("0")) {
+        phoneNumber = "254" + phoneNumber.substring(1);
       }
-    );
 
-    const data = await response.json();
+      if (!phoneNumber.startsWith("254")) {
+        throw new Error(
+          "Enter a valid Kenyan M-PESA number."
+        );
+      }
 
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data.message ||
-        data.errorMessage ||
-        "Failed to initiate M-PESA payment."
+      const response = await fetch(
+        `https://yelivate-apis.onrender.com/api/mpesa/stkpush?business=${config.businessCode}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            phoneNumber,
+            amount,
+            accountReference: `SALE-${Date.now()}`,
+            transactionDesc: config.transactionDescription
+          })
+        }
       );
-    }
-const checkoutRequestId =
-  data.CheckoutRequestID ||
-  data.checkoutRequestId;
 
-if (!checkoutRequestId) {
-  throw new Error(
-    "M-PESA did not return a CheckoutRequestID."
-  );
-}
+      const data = await response.json();
 
-setActiveMpesaPayment({
-  checkoutRequestId,
-  merchantRequestId:
-    data.MerchantRequestID ||
-    data.merchantRequestId ||
-    null
-});
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+          data.errorMessage ||
+          "Failed to initiate M-PESA payment."
+        );
+      }
+      const checkoutRequestId =
+        data.CheckoutRequestID ||
+        data.checkoutRequestId;
 
-setMpesaDraft(prev => ({
-  ...prev,
-  phone: phoneNumber,
-  checkoutRequestId,
-  merchantRequestId:
-    data.MerchantRequestID ||
-    data.merchantRequestId ||
-    null,
-  mpesaSaleStatus: "pending"
-}));
+      if (!checkoutRequestId) {
+        throw new Error(
+          "M-PESA did not return a CheckoutRequestID."
+        );
+      }
 
-    console.log(
-      "STK Push initiated:",
-      checkoutRequestId
-    );
-
-    // Start checking the persistent payment status
-    pollMpesaPayment(
-      checkoutRequestId
-    );
-
-  } catch (error) {
-
-    console.error(
-      "M-PESA payment error:",
-      error
-    );
-
-    setMpesaStatus("failed");
-    setMpesaFailureReason(
-      error?.message ||
-      "Payment request was rejected or timed out. Please retry."
-    );
-
-    alert(
-      error.message ||
-      "Unable to initiate M-PESA payment."
-    );
-
-  } finally {
-    setMpesaProcessing(false);
-  }
-};
-
-const checkMpesaPaymentStatus = async (checkoutRequestId) => {
-  try {
-    const response = await fetch(
-      `https://yelivate-apis.onrender.com/api/mpesa/status/${checkoutRequestId}?business=${config.businessCode}`,
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data.message || "Unable to check M-PESA status."
-      );
-    }
-
-    const payment = data.payment;
-
-    if (payment.status === "completed") {
-      setMpesaStatus("success");
-
-      setMpesaDraft(prev => ({
-        ...prev,
-        transactionId:
-          payment.transactionId || prev.transactionId,
-        checkoutRequestId:
-          payment.checkoutRequestId,
+      setActiveMpesaPayment({
+        checkoutRequestId,
         merchantRequestId:
-          payment.merchantRequestId,
-        mpesaSaleStatus: 
-          payment.status
-      }));
-
-      return "completed";
-    }
-
-    if (payment.status === "failed") {
-      const failureReason =
-        payment.resultDesc ||
-        payment.resultDescription ||
-        "Payment request was rejected or timed out. Please retry.";
-
-      setMpesaStatus("failed");
-      setMpesaFailureReason(failureReason);
+          data.MerchantRequestID ||
+          data.merchantRequestId ||
+          null
+      });
 
       setMpesaDraft(prev => ({
         ...prev,
-        mpesaSaleStatus: 
-          "failed"
+        phone: phoneNumber,
+        checkoutRequestId,
+        merchantRequestId:
+          data.MerchantRequestID ||
+          data.merchantRequestId ||
+          null,
+        mpesaSaleStatus: "pending"
       }));
 
-      return "failed";
-    }
-
-    setMpesaDraft(prev => ({
-        ...prev,
-        mpesaSaleStatus: 
-          "pending"
-      }));
-    
-    return "pending";
-
-  } catch (error) {
-    console.error(
-      "M-PESA status check failed:",
-      error
-    );
-
-    return "pending";
-  }
-};
-
-const pollMpesaPayment = async (checkoutRequestId) => {
-  const maxAttempts = 30;
-  const interval = 3000;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-
-    const status =
-      await checkMpesaPaymentStatus(
+      console.log(
+        "STK Push initiated:",
         checkoutRequestId
       );
 
+      // Start checking the persistent payment status
+      pollMpesaPayment(
+        checkoutRequestId
+      );
+
+    } catch (error) {
+
+      console.error(
+        "M-PESA payment error:",
+        error
+      );
+
+      setMpesaStatus("failed");
+      setMpesaFailureReason(
+        error?.message ||
+        "Payment request was rejected or timed out. Please retry."
+      );
+
+      alert(
+        error.message ||
+        "Unable to initiate M-PESA payment."
+      );
+
+    } finally {
+      setMpesaProcessing(false);
+    }
+  };
+
+  const checkMpesaPaymentStatus = async (checkoutRequestId) => {
+    try {
+      const response = await fetch(
+        `https://yelivate-apis.onrender.com/api/mpesa/status/${checkoutRequestId}?business=${config.businessCode}`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to check M-PESA status."
+        );
+      }
+
+      const payment = data.payment;
+
+      if (payment.status === "completed") {
+        setMpesaStatus("success");
+
+        setMpesaDraft(prev => ({
+          ...prev,
+          transactionId:
+            payment.transactionId || prev.transactionId,
+          checkoutRequestId:
+            payment.checkoutRequestId,
+          merchantRequestId:
+            payment.merchantRequestId,
+          mpesaSaleStatus:
+            payment.status
+        }));
+
+        return "completed";
+      }
+
+      if (payment.status === "failed") {
+        const failureReason =
+          payment.resultDesc ||
+          payment.resultDescription ||
+          "Payment request was rejected or timed out. Please retry.";
+
+        setMpesaStatus("failed");
+        setMpesaFailureReason(failureReason);
+
+        setMpesaDraft(prev => ({
+          ...prev,
+          mpesaSaleStatus:
+            "failed"
+        }));
+
+        return "failed";
+      }
+
+      setMpesaDraft(prev => ({
+        ...prev,
+        mpesaSaleStatus:
+          "pending"
+      }));
+
+      return "pending";
+
+    } catch (error) {
+      console.error(
+        "M-PESA status check failed:",
+        error
+      );
+
+      return "pending";
+    }
+  };
+
+  const pollMpesaPayment = async (checkoutRequestId) => {
+    const maxAttempts = 30;
+    const interval = 3000;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+
+      const status =
+        await checkMpesaPaymentStatus(
+          checkoutRequestId
+        );
+
+      if (
+        status === "completed" ||
+        status === "failed"
+      ) {
+        return;
+      }
+
+      await new Promise(resolve =>
+        setTimeout(resolve, interval)
+      );
+    }
+
+    // We stopped waiting, but don't mark it failed.
+    // The customer may still complete the payment.
+    setMpesaStatus("timeout");
+
+    console.log(
+      "M-PESA polling timed out. Payment may still complete."
+    );
+  };
+
+  const refreshMpesaStatus = async () => {
+    const checkoutRequestId =
+      activeMpesaPayment?.checkoutRequestId;
+
     if (
-      status === "completed" ||
-      status === "failed"
+      !checkoutRequestId ||
+      mpesaRefreshing
     ) {
       return;
     }
 
-    await new Promise(resolve =>
-      setTimeout(resolve, interval)
-    );
-  }
+    try {
+      setMpesaRefreshing(true);
 
-  // We stopped waiting, but don't mark it failed.
-  // The customer may still complete the payment.
-  setMpesaStatus("timeout");
+      await checkMpesaPaymentStatus(
+        checkoutRequestId
+      );
 
-  console.log(
-    "M-PESA polling timed out. Payment may still complete."
-  );
-};
+    } catch (error) {
 
-const refreshMpesaStatus = async () => {
-  const checkoutRequestId =
-    activeMpesaPayment?.checkoutRequestId;
+      console.error(
+        "Manual M-PESA status refresh failed:",
+        error
+      );
 
-  if (
-    !checkoutRequestId ||
-    mpesaRefreshing
-  ) {
-    return;
-  }
-
-  try {
-    setMpesaRefreshing(true);
-
-    await checkMpesaPaymentStatus(
-      checkoutRequestId
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Manual M-PESA status refresh failed:",
-      error
-    );
-
-  } finally {
-    setMpesaRefreshing(false);
-  }
-};
+    } finally {
+      setMpesaRefreshing(false);
+    }
+  };
 
   const cartTotal = cart.reduce(
     (sum, item) =>
@@ -330,12 +330,12 @@ const refreshMpesaStatus = async () => {
     setMpesaDraft({
       transactionId:
         mpesaPayment?.transactionId || "",
-      
-  checkoutRequestId: mpesaPayment?.checkoutRequestId || "",
 
-  merchantRequestId: mpesaPayment?.merchantRequestId || "",
+      checkoutRequestId: mpesaPayment?.checkoutRequestId || "",
 
-  mpesaSaleStatus: mpesaPayment?.mpesaSaleStatus || "idle",
+      merchantRequestId: mpesaPayment?.merchantRequestId || "",
+
+      mpesaSaleStatus: mpesaPayment?.mpesaSaleStatus || "idle",
 
       phone:
         mpesaPayment?.phone ||
@@ -370,7 +370,7 @@ const refreshMpesaStatus = async () => {
     const amount =
       Number(mpesaDraft.amount);
 
-    const mpesaSaleStatus = 
+    const mpesaSaleStatus =
       mpesaDraft.mpesaSaleStatus
 
     if (!transactionId) {
@@ -418,12 +418,12 @@ const refreshMpesaStatus = async () => {
     setMpesaStatus(null);
 
     setMpesaDraft({
-  phone: "",
-  amount: "",
-  transactionId: "",
-  checkoutRequestId: "",
-  merchantRequestId: "",
-  mpesaSaleStatus: "idle"
+      phone: "",
+      amount: "",
+      transactionId: "",
+      checkoutRequestId: "",
+      merchantRequestId: "",
+      mpesaSaleStatus: "idle"
     });
 
     onClearCart();
@@ -642,8 +642,8 @@ const refreshMpesaStatus = async () => {
                     )
                   }
                   className={`border rounded p-2 text-sm font-medium ${paymentMethod === "cash"
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : "bg-white text-slate-600"
+                    ? "bg-green-100 border-green-500 text-green-700"
+                    : "bg-white text-slate-600"
                     }`}
                 >
                   💵 Cash
@@ -657,8 +657,8 @@ const refreshMpesaStatus = async () => {
                     )
                   }
                   className={`border rounded p-2 text-sm font-medium ${paymentMethod === "mpesa"
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : "bg-white text-slate-600"
+                    ? "bg-green-100 border-green-500 text-green-700"
+                    : "bg-white text-slate-600"
                     }`}
                 >
                   📱 M-PESA
@@ -671,8 +671,8 @@ const refreshMpesaStatus = async () => {
                     )
                   }
                   className={`border rounded p-2 text-sm font-medium ${paymentMethod === "bank"
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : "bg-white text-slate-600"
+                    ? "bg-green-100 border-green-500 text-green-700"
+                    : "bg-white text-slate-600"
                     }`}
                 >
                   🏦 Bank
@@ -685,11 +685,11 @@ const refreshMpesaStatus = async () => {
                     )
                   }
                   className={`border rounded p-2 text-sm font-medium ${paymentMethod === "other"
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : "bg-white text-slate-600"
+                    ? "bg-green-100 border-green-500 text-green-700"
+                    : "bg-white text-slate-600"
                     }`}
                 >
-                 💷 Other
+                  💷 Other
                 </button>
               </div>
             </div>
@@ -718,19 +718,19 @@ const refreshMpesaStatus = async () => {
                   </option>
                 ))}
               </select>
-<button
-  type="button"
-  onClick={() => {
-    resetForm();
-    setShowAddCustomer(true);
-  }}
-  className="flex items-center gap-1.5 px-3 py-2 rounded
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setShowAddCustomer(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded
              bg-slate-100 text-slate-700 hover:bg-slate-300
              text-sm font-semibold transition-colors no-wrap min-w-[75px]"
->
-  <span className="text-lg leading-none">+</span>
-  Add
-</button>
+              >
+                <span className="text-lg leading-none">+</span>
+                Add
+              </button>
             </div>
 
             {/* M-PESA payment */}
@@ -835,9 +835,13 @@ const refreshMpesaStatus = async () => {
           {/* Complete sale */}
           <button
             onClick={handleSale}
+            disabled={
+              paymentMethod === "mpesa" &&
+              !mpesaPayment
+            }
             className={`text-white px-3 py-2 rounded font-semibold w-full ${isCredit
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-purple-600 hover:bg-purple-700"
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-purple-600 hover:bg-purple-700"
               } disabled:bg-slate-300 disabled:cursor-not-allowed`}
           >
             {`Complete the Sale
@@ -846,344 +850,294 @@ const refreshMpesaStatus = async () => {
         </>
       )}
 
-{/* M-PESA Payment Modal */}
-{showMpesaModal && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-    onClick={() => {
-      if (!mpesaProcessing) {
-        setShowMpesaModal(false);
-      }
-    }}
-  >
-    <div
-      className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5"
-      onClick={e => e.stopPropagation()}
-    >
-
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">
-            M-PESA Payment
-          </h2>
-
-          <p className="text-xs text-slate-500">
-            Pay using STK Push or enter a manual M-PESA receipt
-          </p>
-        </div>
-        
-
-        <button
-          type="button"
-          disabled={mpesaProcessing}
-          onClick={() => setShowMpesaModal(false)}
-          className="text-slate-400 hover:text-slate-700 text-xl disabled:opacity-40"
+      {/* M-PESA Payment Modal */}
+      {showMpesaModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => {
+            if (!mpesaProcessing) {
+              setShowMpesaModal(false);
+            }
+          }}
         >
-          ×
-        </button>
-      </div>
-
-        {/* Amount due */}
-      <div className="bg-slate-50 border rounded-lg p-3 mb-4">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-slate-500">
-            Sale total
-          </span>
-
-          <span className="font-bold text-lg">
-            Ksh {cartTotal.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      {/* ============================= */}
-      {/* STK PAYMENT SECTION */}
-      {/* ============================= */}
-
-      <div className="border rounded-xl p-4 mb-4">
-      
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="font-semibold text-slate-800">
-              M-Pesa Prompt
-            </h3>
-
-            <p className="text-xs text-slate-500">
-              Send a payment request to the customer's phone.
-            </p>
-          </div>
-
-          {mpesaStatus === "pending" && (
-            <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-              Waiting
-            </span>
-          )}
-
-          {mpesaStatus === "success" && (
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-              Paid
-            </span>
-          )}
-
-          {mpesaStatus === "failed" && (
-            <div className="flex flex-col items-end gap-1">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                Failed
-              </span>
-              <p className="max-w-[180px] text-right text-[10px] leading-snug text-red-600/90">
-                {mpesaFailureReason || "Payment request was rejected or timed out. Please retry."}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Phone */}
-        <div className="mb-3">
-          <label className="block text-xs font-medium text-slate-600 mb-1">
-            Customer M-PESA Number
-          </label>
-
-          <input
-            type="tel"
-            inputMode="numeric"
-            placeholder="0712345678"
-            value={mpesaDraft.phone}
-            disabled={mpesaProcessing || mpesaStatus === "success"}
-            onChange={e =>
-              setMpesaDraft(prev => ({
-                ...prev,
-                phone: e.target.value
-              }))
-            }
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
-          />
-        </div>
-
-        {/* Amount */}
-        <div className="mb-3">
-          <label className="block text-xs font-medium text-slate-600 mb-1">
-            Amount
-          </label>
-
-          <input
-            type="number"
-            min="1"
-            value={mpesaDraft.amount}
-            disabled={mpesaProcessing || mpesaStatus === "success"}
-            onChange={e =>
-              setMpesaDraft(prev => ({
-                ...prev,
-                amount: e.target.value
-              }))
-            }
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
-          />
-        </div>
-
-        {/* Pending message */}
-        {mpesaStatus === "pending" && (
-  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-
-    <div className="flex items-center gap-2">
-      <span className="animate-pulse">
-        ⏳
-      </span>
-
-      <span className="text-sm font-medium text-amber-800">
-        Waiting for payment...
-      </span>
-    </div>
-
-    <p className="text-xs text-amber-700 mt-1">
-      Ask the customer to check their phone and
-      enter their M-PESA PIN.
-    </p>
-
-    <button
-      type="button"
-      onClick={refreshMpesaStatus}
-      disabled={
-        mpesaRefreshing ||
-        !mpesaDraft.checkoutRequestId
-      }
-      className="w-full mt-3 border border-amber-300 bg-white hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-amber-800 rounded-lg py-2 text-sm font-medium"
-    >
-      {mpesaRefreshing
-        ? "Checking Payment..."
-        : "↻ Refresh Payment Status"}
-    </button>
-
-  </div>
-)}
-
-        {/* Successful payment */}
-        {mpesaStatus === "success" && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-
-            <div className="flex items-center gap-2 mb-1">
-              <span>✓</span>
-
-              <span className="text-sm font-semibold text-green-800">
-                Payment received
-              </span>
-            </div>
-
-            {mpesaDraft.transactionId && (
-              <div className="text-xs text-green-700 mt-2">
-                <span className="font-medium">
-                  M-PESA Receipt:
-                </span>{" "}
-                <span className="font-mono">
-                  {mpesaDraft.transactionId}
-                </span>
-              </div>
-            )}
-
-          </div>
-        )}
-
-        {/* STK Push button */}
-        {mpesaStatus !== "success" && (
-          <button
-            type="button"
-            onClick={initiateMpesaPayment}
-            disabled={
-              mpesaProcessing ||
-              mpesaStatus === "pending" ||
-              !mpesaDraft.phone.trim() ||
-              !Number(mpesaDraft.amount)
-            }
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg py-2.5 font-semibold text-sm"
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5"
+            onClick={e => e.stopPropagation()}
           >
-            {mpesaProcessing
-              ? "Sending STK Push..."
-              : mpesaStatus === "pending"
-                ? "Waiting for Payment..."
-                : "Send STK Push"}
-          </button>
-        )}
 
-      </div>
-
-      {/* ============================= */}
-      {/* MANUAL PAYMENT */}
-      {/* ============================= */}
-
-        <div className="mt-4">
-           <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-slate-200" />
-
-                <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-medium">
-                  Manual payment
-                </span>
-
-                <div className="flex-1 h-px bg-slate-200" />
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">
+                  M-PESA Payment
+                </h2>
               </div>
 
-              <div className="border rounded-xl p-4">
-              
-                <p className="text-xs text-slate-500 mb-3">
-                  Use this if the customer already paid or
-                  the STK Push failed.
-                </p>
+              <button
+                type="button"
+                disabled={mpesaProcessing}
+                onClick={() => setShowMpesaModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-xl disabled:opacity-40"
+              >
+                ×
+              </button>
+            </div>
 
+            {/* ============================= */}
+            {/* STK PAYMENT SECTION */}
+            {/* ============================= */}
+
+            <div className="border rounded-xl p-4 mb-2">
+
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-slate-800">
+                    M-Pesa Prompt
+                  </h3>
+
+                  <p className="text-xs text-slate-500">
+                    Send a payment request to the customer's phone.
+                  </p>
+                </div>
+
+                {mpesaStatus === "pending" && (
+                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                    Waiting
+                  </span>
+                )}
+
+                {mpesaStatus === "success" && (
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    Paid
+                  </span>
+                )}
+
+                {mpesaStatus === "failed" && (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                      Failed
+                    </span>
+                    <p className="max-w-[180px] text-right text-[10px] leading-snug text-red-600/90">
+                      {mpesaFailureReason || "Payment request was rejected or timed out. Please retry."}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div className="mb-3">
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  M-PESA Transaction ID
+                  Customer M-PESA Number
                 </label>
 
                 <input
-                  type="text"
-                  placeholder="e.g. SH12ABC34D"
-                  value={mpesaDraft.transactionId}
-                  disabled={mpesaProcessing}
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="0712345678"
+                  value={mpesaDraft.phone}
+                  disabled={mpesaProcessing || mpesaStatus === "success"}
                   onChange={e =>
                     setMpesaDraft(prev => ({
                       ...prev,
-                      transactionId:
-                        e.target.value.toUpperCase()
+                      phone: e.target.value
                     }))
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
                 />
+              </div>
 
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Enter the receipt number from the customer's
-                  M-PESA confirmation message.
-                </p>
+              {/* Amount */}
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Amount (Sale total Ksh {cartTotal.toLocaleString()})
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  value={mpesaDraft.amount}
+                  disabled={mpesaProcessing || mpesaStatus === "success"}
+                  onChange={e =>
+                    setMpesaDraft(prev => ({
+                      ...prev,
+                      amount: e.target.value
+                    }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
+                />
+              </div>
+
+              {/* Pending message */}
+              {mpesaStatus === "pending" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+
+                  <div className="flex items-center gap-2">
+                    <span className="animate-pulse">
+                      ⏳
+                    </span>
+
+                    <span className="text-sm font-medium text-amber-800">
+                      Waiting for payment...
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-amber-700 mt-1">
+                    Ask the customer to check their phone and
+                    enter their M-PESA PIN.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={refreshMpesaStatus}
+                    disabled={
+                      mpesaRefreshing ||
+                      !mpesaDraft.checkoutRequestId
+                    }
+                    className="w-full mt-3 border border-amber-300 bg-white hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-amber-800 rounded-lg py-2 text-sm font-medium"
+                  >
+                    {mpesaRefreshing
+                      ? "Checking Payment..."
+                      : "↻ Refresh Payment Status"}
+                  </button>
+
+                </div>
+              )}
+
+              {/* STK Push button */}
+              {mpesaStatus !== "success" && (
+                <button
+                  type="button"
+                  onClick={initiateMpesaPayment}
+                  disabled={
+                    mpesaProcessing ||
+                    mpesaStatus === "pending" ||
+                    !mpesaDraft.phone.trim() ||
+                    !Number(mpesaDraft.amount)
+                  }
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg py-2.5 font-semibold text-sm mb-2.5"
+                >
+                  {mpesaProcessing
+                    ? "Sending STK Push..."
+                    : mpesaStatus === "pending"
+                      ? "Waiting for Payment..."
+                      : "Send STK Push"}
+                </button>
+              )}
+
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                M-PESA Transaction ID
+              </label>
+
+              <input
+                type="text"
+                placeholder="e.g. SH12ABC34D"
+                value={mpesaDraft.transactionId}
+                disabled={mpesaProcessing}
+                onChange={e =>
+                  setMpesaDraft(prev => ({
+                    ...prev,
+                    transactionId:
+                      e.target.value.toUpperCase()
+                  }))
+                }
+                className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-100"
+              />
+
+              <button
+                type="button"
+                disabled={
+                  mpesaProcessing ||
+                  !mpesaDraft.transactionId.trim() ||
+                  !Number(mpesaDraft.amount)
+                }
+                onClick={() => {
+                  saveMpesaPayment({
+                    source: "manual"
+                  });
+                }}
+                className="w-full mt-3 border border-green-600 text-green-700 hover:bg-green-50 disabled:border-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed rounded-lg py-2.5 font-semibold text-sm"
+              >
+                Save Manually
+              </button>
+
+              {/* Footer */}
+              <div className="flex gap-2 mt-4">
 
                 <button
                   type="button"
-                  disabled={
-                    mpesaProcessing ||
-                    !mpesaDraft.transactionId.trim() ||
-                    !Number(mpesaDraft.amount)
-                  }
-                  onClick={() => {
-                    saveMpesaPayment({
-                      source: "manual"
-                    });
-                  }}
-                  className="w-full mt-3 border border-green-600 text-green-700 hover:bg-green-50 disabled:border-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed rounded-lg py-2.5 font-semibold text-sm"
+                  disabled={mpesaProcessing}
+                  onClick={() => setShowMpesaModal(false)}
+                  className="flex-1 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 rounded-lg py-2.5 text-sm font-medium"
                 >
-                  Save Manual Payment
+                  Cancel
                 </button>
+
+                {mpesaStatus === "success" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      saveMpesaPayment({
+                        source: "stk"
+                      });
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2.5 font-semibold text-sm"
+                  >
+                    ✓ Save Payment
+                  </button>
+                )}
+
+                {/* Successful payment */}
+                {mpesaStatus === "success" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+
+                    <div className="flex items-center gap-2 mb-1">
+                      <span>✓</span>
+
+                      <span className="text-sm font-semibold text-green-800">
+                        Payment received
+                      </span>
+                    </div>
+
+                    {mpesaDraft.transactionId && (
+                      <div className="text-xs text-green-700 mt-2">
+                        <span className="font-medium">
+                          M-PESA Receipt:
+                        </span>{" "}
+                        <span className="font-mono">
+                          {mpesaDraft.transactionId}
+                        </span>
+                      </div>
+                    )}
+
+                  </div>
+                )}
               </div>
-             </div>
+            </div>
+          </div>
+          </div>
+      )}
 
-      {/* Footer */}
-      <div className="flex gap-2 mt-4">
-
-        <button
-          type="button"
-          disabled={mpesaProcessing}
-          onClick={() => setShowMpesaModal(false)}
-          className="flex-1 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 rounded-lg py-2.5 text-sm font-medium"
-        >
-          Cancel
-        </button>
-
-        {mpesaStatus === "success" && (
-          <button
-            type="button"
-            onClick={() => {
-              saveMpesaPayment({
-                source: "stk"
-              });
+          <AddCustomerModal
+            open={showAddCustomer}
+            form={customerForm}
+            saving={savingCustomer}
+            onChange={handleFormChange}
+            onClose={() => {
+              resetForm();
+              setShowAddCustomer(false);
             }}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2.5 font-semibold text-sm"
-          >
-            ✓ Save Payment
-          </button>
-        )}
-
-      </div>
-
-    </div>
-  </div>
-)}
-
-<AddCustomerModal
-  open={showAddCustomer}
-  form={customerForm}
-  saving={savingCustomer}
-  onChange={handleFormChange}
-  onClose={() => {
-    resetForm();
-    setShowAddCustomer(false);
-  }}
-  onSave={async () => {
-    try {
-      await saveCustomer();
-      loadCustomers();
-      setCustomerName(customerForm.name);
-      setShowAddCustomer(false);
-    } catch (error) {
-      alert(error.message);
-    }
-  }}
-/>
-    </div>
-  );
+            onSave={async () => {
+              try {
+                await saveCustomer();
+                loadCustomers();
+                setCustomerName(customerForm.name);
+                setShowAddCustomer(false);
+              } catch (error) {
+                alert(error.message);
+              }
+            }}
+          />
+        </div>
+      );
 }
