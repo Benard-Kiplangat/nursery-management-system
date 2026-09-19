@@ -254,8 +254,6 @@ export default function Sales() {
     ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   })();
 
-  const { canViewProfit } = useAuth();
-
   const todayUnits = sales.reduce((sum, sale) => sum + Number(sale.quantity || 0), 0);
   const averageSale = sales.length ? summary.totalRevenue / sales.length : 0;
   const discountTotal = sales.reduce((sum, sale) => sum + Number(sale.discountAmount || 0), 0);
@@ -361,7 +359,7 @@ export default function Sales() {
                       }}
                     />
 
-                    eTIMS
+                    eTIMS (Test)
                   </label>
                 </div>
                 </div>

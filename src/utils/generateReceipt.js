@@ -824,15 +824,11 @@ export const generateETIMSReceipt = (receipt) => {
 
   y += 1;
 
-   if (
-    Number(totalDiscount || 0) !== 0
-  ) {
     drawLeftTotal(
-      "Subtotal Before Discount",
-      totalBeforeDiscount,
+      "Subtotal",
+      total,
       true
     );
-  }
 
   if (
     Number(totalDiscount || 0) !== 0
@@ -940,14 +936,6 @@ export const generateETIMSReceipt = (receipt) => {
    * ---------------------------------------------------------
    */
 
-  if (etims) {
-    drawLeftTotal(
-    "Total to Pay",
-    (total || items[0]?.bulkTotal || items[0].total),
-    true
-  );
-}
-
   drawLeftTotal(
     etims
       ? "Total To Pay"
@@ -975,9 +963,9 @@ export const generateETIMSReceipt = (receipt) => {
 
     drawTwoColumnRow(
       "Date",
-      cuDate || saleDate,
+      cuDate || date,
       "Time",
-      cuTime || saleTime
+      cuTime || time
     );
 
     drawTwoColumnRow(
@@ -1191,10 +1179,12 @@ export const generateETIMSReceipt = (receipt) => {
    * =========================================================
    */
 
-  doc.autoPrint();
-
+  if (window.electronAPI) {
+     doc.autoPrint();
+  } else {
   window.open(
     doc.output("bloburl"),
     "_blank"
   );
+}
 };
