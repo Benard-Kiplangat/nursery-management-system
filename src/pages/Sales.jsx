@@ -8,7 +8,6 @@ import EditSaleModal from "../components/EditSaleModal";
 import CropSummary from "../components/CropSummary";
 import CustomerSummary from "../components/CustomerSummary";
 import Presale from "./Presale";
-import { useAuth } from "../context/AuthContext";
 import { useBusinessConfig } from "../config";
 
 export default function Sales() {

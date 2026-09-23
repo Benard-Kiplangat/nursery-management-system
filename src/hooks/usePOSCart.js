@@ -76,13 +76,9 @@ export function usePOSCart({
     } else {
        sellingPrice = product.price;
     }
-
-    console.log(sellingPrices)
   
     const subtotal = qty * product.price;
-    console.log(sellingPrice, subtotal)
     const discount = Math.max(subtotal - (sellingPrice * qty), 0);
-    console.log(discount)
     const total = subtotal - discount;
     const now = new Date().toISOString();
     const initialPayment = Number(downPayment[product._id] || 0);
@@ -116,8 +112,6 @@ export function usePOSCart({
       batchId: batch._id,
       batchDatePlanted: batch.datePlanted,
     };
-
-    console.log(sale);
 
     try {
       if (!isPresale) await deductFromBatch(batch._id, qty);
@@ -314,7 +308,6 @@ export function usePOSCart({
       salesToPut[i].bulkTotal = bulkTotal;
       await db.put(salesToPut[i]);
     }
-    console.log(salesToPut)
 
     const totalAmount = cart.reduce(
       (sum, item) => sum + item.qty * item.sellingPrice,
