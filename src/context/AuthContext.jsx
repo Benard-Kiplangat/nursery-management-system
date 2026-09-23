@@ -24,7 +24,7 @@ async function persistHashedPassword(user, plainPassword) {
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(localStorage.getItem(SESSION_KEY));
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,10 +66,9 @@ export function AuthProvider({ children }) {
         userDocs = await ensureDefaultAdmin(userDocs);
         setUsers(userDocs.map((user) => toSafeUser(user)));
 
-        const storedId = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+        const storedId = localStorage.getItem(SESSION_KEY);
         if (storedId) {
-          sessionStorage.setItem(SESSION_KEY, storedId);
-          localStorage.removeItem(SESSION_KEY);
+          localStorage.setItem(SESSION_KEY, storedId);
           const match = userDocs.find((user) => user._id === storedId);
           if (match) setCurrentUser(toSafeUser(match));
         }
@@ -98,14 +97,12 @@ export function AuthProvider({ children }) {
 
     const safeUser = toSafeUser(migratedUser);
     setCurrentUser(safeUser);
-    sessionStorage.setItem(SESSION_KEY, migratedUser._id);
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.setItem(SESSION_KEY, migratedUser._id);
     return true;
   };
 
   const logout = () => {
     setCurrentUser(null);
-    sessionStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_KEY);
   };
 
