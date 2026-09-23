@@ -97,7 +97,7 @@ export const generateETIMSReceipt = (receipt) => {
       });
 
   const date = timestamp.split("T")[0];
-  const time = timestamp.split("T")[1].split(".")[0];
+  const time = new Date(timestamp).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second:'2-digit', hour12: false });
 
   /*
    * =========================================================
@@ -174,10 +174,10 @@ export const generateETIMSReceipt = (receipt) => {
     scUHeight +
     + typeHeight +
     (etims && qrBase64 ? 35 : 15) +
-    30;                      // Footer 
+    (etims ? 30 : -20);                      // Footer 
 
   const receiptHeight = Math.max(
-    105,
+    90,
     Math.ceil(etims ? estimatedHeight - 35 : estimatedHeight - 55 )
   );
 
@@ -412,23 +412,9 @@ export const generateETIMSReceipt = (receipt) => {
 
   y += 4;
 
-  if (shopTradeName) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-
-    doc.text(
-      safe(shopTradeName),
-      CENTER,
-      y,
-      { align: "center" }
-    );
-
-    y += 3;
-  }
-
   if (shopAddress) {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
+    doc.setFontSize(8);
 
     const addressLines =
       doc.splitTextToSize(
@@ -444,11 +430,13 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
     y +=
-      addressLines.length * 2.7;
+      addressLines.length * 3.5;
+  
+    y += 0.5
   }
 
   if (shopTel) {
-    doc.setFontSize(6);
+    doc.setFontSize(8);
 
     doc.text(
       `Tel: ${safe(shopTel)}`,
@@ -457,11 +445,11 @@ export const generateETIMSReceipt = (receipt) => {
       { align: "center" }
     );
 
-    y += 3;
+    y += 4;
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.5);
+  doc.setFontSize(7.5);
 
   doc.text(
     `PIN: ${safe(shopPin)}`,
@@ -493,7 +481,7 @@ export const generateETIMSReceipt = (receipt) => {
    */
   const receiptTitle = etims
     ? title
-    : "RECEIPT";
+    : "";
 
   doc.text(
     receiptTitle,
@@ -502,7 +490,7 @@ export const generateETIMSReceipt = (receipt) => {
     { align: "center" }
   );
 
-  y += 4;
+  etims ? y += 4 : y = y;
 
   /*
    * =========================================================
@@ -543,9 +531,9 @@ export const generateETIMSReceipt = (receipt) => {
    * RECEIPT INFORMATION
    * =========================================================
    */
-
+/*
   sectionHeading("RECEIPT INFORMATION");
-
+*/
   /*
    * TWO COLUMN LAYOUT
    *
@@ -826,7 +814,7 @@ export const generateETIMSReceipt = (receipt) => {
 
     drawLeftTotal(
       "Subtotal",
-      total,
+      total || items[0]?.bulkTotal + totalDiscount || items[0].total + totalDiscount,
       true
     );
 
@@ -835,7 +823,7 @@ export const generateETIMSReceipt = (receipt) => {
   ) {
     drawLeftTotal(
       "Total Discount",
-      -Math.abs(
+      Math.abs(
         Number(totalDiscount)
       ),
       true
@@ -939,7 +927,7 @@ export const generateETIMSReceipt = (receipt) => {
   drawLeftTotal(
     etims
       ? "Total To Pay"
-      : "Total",
+      : "Total To Pay",
     (total || items[0]?.bulkTotal || items[0].total),
     true
   );
@@ -1179,12 +1167,12 @@ export const generateETIMSReceipt = (receipt) => {
    * =========================================================
    */
 
-  if (window.electronAPI) {
-     doc.autoPrint();
-  } else {
-  window.open(
-    doc.output("bloburl"),
-    "_blank"
-  );
+  const pdfBlobUrl = doc.output('bloburl');
+  const printWindow = window.open(pdfBlobUrl);
+
+if (printWindow) {
+  printWindow.onload = () => {
+    printWindow.print();
+  };
 }
 };

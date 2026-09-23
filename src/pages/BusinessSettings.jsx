@@ -5,16 +5,13 @@ import { showToast } from "../utils/toast";
 import { db } from "../db";
 
 const fieldDefinitions = [
-  { name: "businessName", label: "Business Name", placeholder: "Yeli Yeli" },
-  { name: "businessCode", label: "Business Code", placeholder: "YL" },
+  { name: "businessName", label: "Business Name", placeholder: "XS Farm Nursery" },
+  { name: "businessCode", label: "Business Code", placeholder: "XS" },
   { name: "businessTel", label: "Business Contact", placeholder: "+254700000000" },
   { name: "kraPin", label: "KRA PIN", placeholder: "A123456789B" },
-  { name: "address", label: "Business Address", placeholder: "Bomet-Nairobi Highway" },
-  { name: "businessDisplayName", label: "Display Name", placeholder: "Yeli Farm Nursery" },
-  { name: "appName", label: "App Name", placeholder: "Yeli Farm & Nursery POS" },
-  { name: "systemName", label: "System Name", placeholder: "Yeli Nursery Management System" },
-  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "Yeli Farm" },
-  { name: "currency", label: "Currency", placeholder: "KES" },
+  { name: "address", label: "Business Address", placeholder: "Chebirbelek Town" },
+  { name: "businessDisplayName", label: "Display Name", placeholder: "XS Farm Nursery" },
+  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "XS Farm" }
 ];
 
 const ETIMS_API_URL = "https://yelivate-apis.onrender.com";
@@ -370,7 +367,7 @@ export default function BusinessSettings() {
           };
           await db.put(updated);
           updatedCount++;
-        } else {
+        } else {/*
           const newCrop = {
             _id: `crop:${itemName.replace(/\s+/g, "_")}:${Date.now()}:${Math.floor(Math.random() * 1000)}`,
             type: "crop",
@@ -387,6 +384,7 @@ export default function BusinessSettings() {
           };
           await db.put(newCrop);
           currentCrops.push(newCrop);
+          */
           addedCount++;
         }
       }
