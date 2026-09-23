@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resetDb: () => ipcRenderer.invoke('bosco:db:resetDb'),
   hardRefresh: () => ipcRenderer.invoke('bosco:app:hardRefresh'),
   createBackup: () => ipcRenderer.invoke("bosco:backup:create"),
+  migrateLegacy: (legacyDbPath) => ipcRenderer.invoke("bosco:db:migrateLegacy", legacyDbPath),
   restoreBackup: () => ipcRenderer.invoke("bosco:backup:restore"),
 });

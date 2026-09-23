@@ -278,6 +278,10 @@ function checkAppFiles() {
 // IPC - SQLite
 // --------------------------------------------------
 
+// --------------------------------------------------
+// IPC - SQLite: Legacy document API
+// --------------------------------------------------
+
 ipcMain.handle("bosco:db:allDocs", async (_event, options = {}) => {
     return sqliteService.allDocs(options);
 });
@@ -294,6 +298,168 @@ ipcMain.handle("bosco:db:remove", async (_event, doc) => {
     return sqliteService.remove(doc);
 });
 
+
+// --------------------------------------------------
+// IPC - SQLite: Products
+// --------------------------------------------------
+
+ipcMain.handle("bosco:products:getAll", async (_event, options = {}) => {
+    return sqliteService.getProducts(options);
+});
+
+ipcMain.handle("bosco:products:get", async (_event, id) => {
+    return sqliteService.getProduct(id);
+});
+
+ipcMain.handle("bosco:products:save", async (_event, product) => {
+    return sqliteService.saveProduct(product);
+});
+
+
+// --------------------------------------------------
+// IPC - SQLite: Batches
+// --------------------------------------------------
+
+ipcMain.handle("bosco:batches:getAll", async (_event, options = {}) => {
+    return sqliteService.getBatches(options);
+});
+
+ipcMain.handle("bosco:batches:get", async (_event, id) => {
+    return sqliteService.getBatchesById(id);
+});
+
+ipcMain.handle("bosco:batches:save", async (_event, batch) => {
+    return sqliteService.saveBatch(batch);
+});
+
+ipcMain.handle(
+    "bosco:batches:updateQuantity",
+    async (_event, batchId, quantityRemaining) => {
+        return sqliteService.updateBatchQuantity(
+            batchId,
+            quantityRemaining
+        );
+    }
+);
+
+ipcMain.handle(
+    "bosco:batches:deduct",
+    async (_event, batchId, quantity) => {
+        return sqliteService.deductFromBatch(
+            batchId,
+            quantity
+        );
+    }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Customers
+// --------------------------------------------------
+
+ipcMain.handle("bosco:customers:getAll", async () => {
+    return sqliteService.getCustomers();
+});
+
+ipcMain.handle("bosco:customers:save", async (_event, customer) => {
+    return sqliteService.saveCustomer(customer);
+});
+
+
+// --------------------------------------------------
+// IPC - SQLite: Sales / Presales
+// --------------------------------------------------
+
+ipcMain.handle(
+    "bosco:sales:getAll",
+    async (_event, options = {}) => {
+        return sqliteService.getSales(options);
+    }
+);
+
+ipcMain.handle(
+    "bosco:sales:create",
+    async (_event, sale) => {
+        return sqliteService.createSale(sale);
+    }
+);
+
+ipcMain.handle(
+    "bosco:sales:addPayment",
+    async (_event, payment) => {
+        return sqliteService.addPayment(payment);
+    }
+);
+
+ipcMain.handle(
+    "bosco:sales:updateDownPayment",
+    async (_event, data) => {
+        return sqliteService.updateSaleDownPayment(data);
+    }
+);
+
+ipcMain.handle(
+    "bosco:presales:complete",
+    async (_event, data) => {
+        return sqliteService.completePresale(data);
+    }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Purchases
+// --------------------------------------------------
+
+ipcMain.handle(
+    "bosco:purchases:getAll",
+    async (_event, options = {}) => {
+        return sqliteService.getPurchases(options);
+    }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Expenses
+// --------------------------------------------------
+
+ipcMain.handle(
+    "bosco:expenses:getAll",
+    async (_event, options = {}) => {
+        return sqliteService.getExpenses(options);
+    }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Cash
+// --------------------------------------------------
+
+ipcMain.handle(
+    "bosco:cash:getSummary",
+    async (_event, options = {}) => {
+        return sqliteService.getCashSummary(options);
+    }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Migration
+// --------------------------------------------------
+
+ipcMain.handle(
+  "bosco:db:migrateLegacy",
+  async (_event, legacyDbPath) => {
+    return sqliteService.migrateLegacyDatabase(
+      legacyDbPath
+    );
+  }
+);
+
+
+// --------------------------------------------------
+// IPC - SQLite: Database management
+// --------------------------------------------------
+
 ipcMain.handle("bosco:db:destroy", async () => {
     return sqliteService.destroy();
 });
@@ -302,10 +468,20 @@ ipcMain.handle("bosco:db:resetDb", async () => {
     return sqliteService.resetDb();
 });
 
+
+// --------------------------------------------------
+// IPC - App
+// --------------------------------------------------
+
 ipcMain.handle("bosco:app:hardRefresh", async () => {
     await hardRefreshApp();
     return true;
 });
+
+
+// --------------------------------------------------
+// IPC - Backup
+// --------------------------------------------------
 
 ipcMain.handle("bosco:backup:create", async () => {
     await backupService.performBackup(
