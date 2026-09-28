@@ -10,7 +10,7 @@ export const generateETIMSReceipt = (receipt) => {
     // -------------------------------------------------------
     // BUSINESS
     // -------------------------------------------------------
-    shopName="Yeli Farm and Nursery",
+    shopName="",
     shopTradeName,
     shopAddress,
     shopPin,
@@ -165,19 +165,19 @@ export const generateETIMSReceipt = (receipt) => {
   const typeHeight = receiptType !== "Normal" && etims ? 6 : 0;
 
   const estimatedHeight =
-    35 +                     // Header
+    15 +                     // Header
     25 +                     // Receipt information
     10 +                     // Items header
     estimatedItemHeight +
     35 +                     // Totals
     taxHeight +
-    scUHeight +
+    scUHeight
     + typeHeight +
     (etims && qrBase64 ? 35 : 15) +
-    (etims ? 30 : -20);                      // Footer 
+    (etims ? 25 : 0);                 // Footer 
 
   const receiptHeight = Math.max(
-    90,
+    95,
     Math.ceil(etims ? estimatedHeight - 35 : estimatedHeight - 55 )
   );
 
@@ -448,6 +448,7 @@ export const generateETIMSReceipt = (receipt) => {
     y += 4;
   }
 
+  if (shopPin) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
 
@@ -457,9 +458,10 @@ export const generateETIMSReceipt = (receipt) => {
     y,
     { align: "center" }
   );
-
-  y += 4;
-
+   y += 4;
+  }
+ 
+y -= 2;
   drawLine();
 
   /*
@@ -658,7 +660,7 @@ export const generateETIMSReceipt = (receipt) => {
   );
 
   doc.text(
-    "AMOUNT",
+    "TOTAL",
     RIGHT,
     y,
     { align: "right" }
@@ -696,7 +698,7 @@ export const generateETIMSReceipt = (receipt) => {
     );
 
       const taxableAmount = Number(
-      sale.taxable_amount ?? 0
+      amount - (0.16 * amount) ?? 0
     );
 
     const discount = Number(
@@ -812,23 +814,23 @@ export const generateETIMSReceipt = (receipt) => {
 
   y += 1;
 
-    drawLeftTotal(
-      "Subtotal",
-      total || items[0]?.bulkTotal + totalDiscount || items[0].total + totalDiscount,
-      true
-    );
-
-  if (
+    if (
     Number(totalDiscount || 0) !== 0
   ) {
     drawLeftTotal(
-      "Total Discount",
+      "Discount",
       Math.abs(
         Number(totalDiscount)
       ),
       true
     );
   }
+
+    drawLeftTotal(
+      "Subtotal",
+      total || items[0]?.bulkTotal + totalDiscount || items[0].total + totalDiscount,
+      true
+    );
 
   etims && drawLine()
 
@@ -1142,6 +1144,16 @@ export const generateETIMSReceipt = (receipt) => {
     { align: "center" }
   );
 
+  etims ? y +=2 : y = y;
+
+  etims ? (
+  doc.text(
+    "Prices inclusive of tax where applicable",
+    CENTER,
+    y,
+    { align: "center" }
+  )
+) : ""
   /*
    * ---------------------------------------------------------
    * eTIMS footer reference

@@ -2,18 +2,18 @@ import React, { useEffect, useState } from "react";
 import { DEFAULT_APP_CONFIG, useBusinessConfig } from "../config";
 import { useAuth } from "../context/AuthContext";
 import { showToast } from "../utils/toast";
-import { db } from "../db";
+//import { db } from "../db";
 
 const fieldDefinitions = [
-  { name: "businessName", label: "Business Name", placeholder: "XS Farm Nursery" },
-  { name: "businessCode", label: "Business Code", placeholder: "XS" },
-  { name: "businessTel", label: "Business Contact", placeholder: "+254700000000" },
-  { name: "kraPin", label: "KRA PIN", placeholder: "A123456789B" },
-  { name: "address", label: "Business Address", placeholder: "Chebirbelek Town" },
-  { name: "businessDisplayName", label: "Display Name", placeholder: "XS Farm Nursery" },
-  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "XS Farm" }
+  { name: "businessName", label: "Business Name", placeholder: "" },
+  /*{ name: "businessCode", label: "Business Code", placeholder: "XS" },*/
+  { name: "businessTel", label: "Business Contact", placeholder: "" },
+  /*{ name: "kraPin", label: "KRA PIN", placeholder: "A123456789B" },*/
+  { name: "address", label: "Business Location/Postal Address", placeholder: "Located in..." },
+  /*{ name: "businessDisplayName", label: "Display Name", placeholder: "XS Farm Nursery" },
+  { name: "transactionDescription", label: "M-Pesa Transaction Description", placeholder: "XS Farm" }*/
 ];
-
+/*
 const ETIMS_API_URL = "https://yelivate-apis.onrender.com";
 const SEEDLING_DEFAULTS = {
   itemClassCode: "99020000",
@@ -22,41 +22,41 @@ const SEEDLING_DEFAULTS = {
   packageUnitCode: "NT",
   quantityUnitCode: "U",
   taxTypeCode: "D",
-};
+};*/
 
 export default function BusinessSettings() {
   const { currentUser, isAdmin } = useAuth();
-  const { config, updateConfig, resetConfig } = useBusinessConfig();
+  const { config, updateConfig } = useBusinessConfig();
   const [form, setForm] = useState(config);
   const [saving, setSaving] = useState(false);
-  const [crops, setCrops] = useState([]);
-  const [registeringCropId, setRegisteringCropId] = useState(null);
-  const [registeringAll, setRegisteringAll] = useState(false);
-  const [customers, setCustomers] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [registeringSupplierId, setRegisteringSupplierId] = useState(null);
-  const [registeringAllSuppliers, setRegisteringAllSuppliers] = useState(false);
-  const [registeringCustomerId, setRegisteringCustomerId] = useState(null);
-  const [registeringAllCustomers, setRegisteringAllCustomers] = useState(false);
-  const [updatingCropId, setUpdatingCropId] = useState(null);
-  const [updatingCustomerId, setUpdatingCustomerId] = useState(null);
-  const [updatingSupplierId, setUpdatingSupplierId] = useState(null);
-  const [loadingItemsFromDigitax, setLoadingItemsFromDigitax] = useState(false);
-  const [loadingCustomersFromDigitax, setLoadingCustomersFromDigitax] = useState(false);
-  const [loadingSuppliersFromDigitax, setLoadingSuppliersFromDigitax] = useState(false);
-  const [loadingAllFromDigitax, setLoadingAllFromDigitax] = useState(false);
+  //const [crops, setCrops] = useState([]);
+  // const [registeringCropId, setRegisteringCropId] = useState(null);
+  // const [registeringAll, setRegisteringAll] = useState(false);
+  //const [customers, setCustomers] = useState([]);
+  //const [suppliers, setSuppliers] = useState([]);
+  // const [registeringSupplierId, setRegisteringSupplierId] = useState(null);
+  // const [registeringAllSuppliers, setRegisteringAllSuppliers] = useState(false);
+  // const [registeringCustomerId, setRegisteringCustomerId] = useState(null);
+  // const [registeringAllCustomers, setRegisteringAllCustomers] = useState(false);
+  // const [updatingCropId, setUpdatingCropId] = useState(null);
+  // const [updatingCustomerId, setUpdatingCustomerId] = useState(null);
+  // const [updatingSupplierId, setUpdatingSupplierId] = useState(null);
+  // const [loadingItemsFromDigitax, setLoadingItemsFromDigitax] = useState(false);
+  // const [loadingCustomersFromDigitax, setLoadingCustomersFromDigitax] = useState(false);
+  // const [loadingSuppliersFromDigitax, setLoadingSuppliersFromDigitax] = useState(false);
+  // const [loadingAllFromDigitax, setLoadingAllFromDigitax] = useState(false);
 
-  useEffect(() => {
-    setForm(config);
-  }, [config]);
+  //useEffect(() => {
+  //  setForm(config);
+  //}, [config]);
 
-  useEffect(() => {
-    loadCrops();
-    loadCustomers();
-    loadSuppliers();
-  }, []);
+  // useEffect(() => {
+  //   loadCrops();
+  //   loadCustomers();
+  //   loadSuppliers();
+  // }, []);
 
-  const loadCrops = async () => {
+/*  const loadCrops = async () => {
     const result = await db.allDocs({ include_docs: true });
     setCrops(result.rows.map((row) => row.doc).filter((doc) => doc?.type === "crop"));
   };
@@ -70,7 +70,7 @@ export default function BusinessSettings() {
     const result = await db.allDocs({ include_docs: true, startkey: "supplier:", endkey: "supplier:\uffff" });
     setSuppliers(result.rows.map((row) => row.doc).filter((doc) => doc?.type === "supplier"));
   };
-
+*/
   if (!currentUser || !isAdmin) {
     return (
       <div className="p-8 text-center text-rose-600 font-bold">
@@ -102,13 +102,7 @@ export default function BusinessSettings() {
 
     setSaving(false);
   };
-
-  const handleReset = () => {
-    const resetValue = resetConfig();
-    setForm(resetValue);
-    showToast("Business settings reset to default values.");
-  };
-
+/*
   const registerCrop = async (crop) => {
     setRegisteringCropId(crop._id);
     try {
@@ -384,7 +378,6 @@ export default function BusinessSettings() {
           };
           await db.put(newCrop);
           currentCrops.push(newCrop);
-          */
           addedCount++;
         }
       }
@@ -596,18 +589,19 @@ export default function BusinessSettings() {
       setLoadingAllFromDigitax(false);
     }
   };
+  */
 
   return (
-    <div className="p-4 pb-12 mb-4 max-w-4xl mx-auto">
+    <div className="p-4 pb-12 mb-4 max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Business Settings</h1>
         <p className="text-sm text-slate-500">
-          Update the business details used across the app. Any value left blank will remain at the default configuration.
+          Update your business details used in receipt & across the app.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-5">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           {fieldDefinitions.map((field) => (
             <label key={field.name} className="block text-sm font-medium text-slate-700">
               <span className="mb-1 block">{field.label}</span>
@@ -623,7 +617,7 @@ export default function BusinessSettings() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-slate-200">
           <button
             type="submit"
             disabled={saving}
@@ -631,22 +625,10 @@ export default function BusinessSettings() {
           >
             {saving ? "Saving..." : "Save business settings"}
           </button>
-
-          <button
-            type="button"
-            onClick={handleReset}
-            className="border border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-medium hover:bg-slate-100"
-          >
-            Reset to default
-          </button>
-
-          <span className="text-xs text-slate-500">
-            Default values come from {DEFAULT_APP_CONFIG.businessName || "the app config"}.
-          </span>
-        </div>
+          </div>
       </form>
 
-      {/* DigiTax Import & Sync Card */}
+      {/* DigiTax Import & Sync Card 
       <section className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm p-5 mt-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -868,6 +850,7 @@ export default function BusinessSettings() {
           </div>
         )}
       </section>
+*/}
 
     </div>
   );

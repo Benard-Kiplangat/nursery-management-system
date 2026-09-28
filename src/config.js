@@ -4,13 +4,7 @@ const PUBLIC_APP_CONFIG_URL = `${import.meta.env.BASE_URL}config/app-config.json
 const fallbackConfig = {
   businessCode: "XS",
   businessName: "XS Farm and Nursery",
-  businessTel: "+254759502072",
-  businessDisplayName: "XS Farm Nursery",
-  appName: "XS Farm & Nursery POS",
-  systemName: "XS Nursery Management System",
-  kraPin: "N/A",
-  address: "P.O Box 50-20400 Bomet",
-  transactionDescription: "XS Farm payment",
+  businessTel: "0759502072/0782594838",
   currency: "KES",
 };
 export const DEFAULT_APP_CONFIG = Object.freeze(fallbackConfig);

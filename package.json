@@ -1,6 +1,6 @@
 {
   "name": "XS-Farm-nursery",
-  "version": "0.3.0",
+  "version": "0.1.0",
   "author": "Benard Kiplangat",
   "description": "POS application for a Farm & Nursery Farm",
   "main": "electron/main.js",
