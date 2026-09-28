@@ -5,11 +5,11 @@ import { showToast } from "../utils/toast";
 
 function getShopData(config = {}) {
   return {
-    shopName: config.businessName || "XS Farm and Nursery",
-    shopAddress: config.address || "P.O Box 50-20400 Bomet",
-    shopTradeName: config.tradeName || "Leading farm in Bomet & Beyond",
-    shopTel: config.businessTel || "+254 711 555 888",
-    shopPin: config.kraPin || "P051234567M",
+    shopName: config.businessName || "",
+    shopAddress: config.address || "",
+    shopTradeName: config.tradeName || "",
+    shopTel: config.businessTel || "",
+    shopPin: config.kraPin || "",
   };
 }
 
@@ -85,7 +85,7 @@ function renderLocalReceipt(items, invoiceNo, config) {
     buyerName: customer.name,
     buyerPin: customer.pin,
     paymentMethod: items[0].paymentMethod || "Cash - Paid",
-    timestamp: items[0].createdAt || items[0].timestamp || new Date().toISOString(),
+    timestamp: items[0].timestamp || items[0].createdAt || new Date().toISOString(),
   });
 }
 
@@ -199,7 +199,7 @@ async function generateSaleReceipt(items, etimsMode, config) {
     buyerPin: result?.invoice?.customer_tin || items[0].customerPin,
     invoiceNo: sale?.trader_invoice_number || invoiceNo,
     cuInvoiceNo: result?.cuInvoiceNo || invoiceData.cuInvoiceNo,
-    timestamp: items[0].createdAt || items[0].timestamp || new Date().toISOString(),
+    timestamp: items[0].timestamp || items[0].createdAt || new Date().toISOString(),
     totalBeforeDiscount,
     totalDiscount,
     totalTax,
@@ -264,22 +264,17 @@ function BulkSaleGroup({
   const totalAmount = group.items.reduce((sum, s) => sum + (s.total || 0), 0);
   const totalQty = group.items.reduce((sum, s) => sum + (s.quantity || 0), 0);
   const isCreditSale = group.items[0]?.isCreditSale || false;
-  const isPreSale = group.items[0]?.isPresale || false;
   const customerName = group.items[0]?.customerName || "";
   const bulkDwnPayment = group.items[0]?.bulkDwnPayment || 0;
   const amountOwed = totalAmount - bulkDwnPayment;
   const isPaid = group.items[0]?.isCreditPaid || false;
 
   const borderClass = isCreditSale ? "border-red-400 bg-red-50" : "border-purple-400 bg-purple-50";
-  const badgeBg = isCreditSale ? "bg-red-600" : "bg-purple-600";
 
   return (
     <div className={`border-2 ${borderClass} rounded p-3`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`${badgeBg} text-white text-xs font-bold px-2 py-0.5 rounded`}>
-            {isCreditSale ? (isPreSale ? "BULK PRESALE CREDIT" : "BULK CREDIT") : (isPreSale ? "BULK PRESALE" : "BULK SALE")}
-          </span>
           <span className="text-sm text-gray-500">
             {new Date(group.timestamp).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
           </span>

@@ -284,7 +284,7 @@ export default function Sales() {
   return (
     <div className="p-4 pb-32 max-w-7xl">
       <div className="flex w-full items-center justify-between text-2xl font-bold text-slate-900 pb-1 max-w-xl">
-<h1 className="pb-2">Sales History</h1>
+        <h1 className="pb-2">Sales History</h1>
       </div>
       <div className="mb-2 max-w-xl rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
         <div className="flex gap-1 overflow-x-auto items-center justify-around no-wrap">
@@ -314,6 +314,22 @@ export default function Sales() {
         <div className="flex gap-4 sm:flex-col">
           <div className="max-w-xl w-full flex-shrink-0">
             <div className="flex flex-col mb-2">
+              <div className="grid grid-cols-3 gap-1 mb-2">
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Sales</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.totalRevenue).toLocaleString()}</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Due Sales</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-amber-600">Ksh {formatWhole(summary.totalCreditSales).toLocaleString()}</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-2 py-2.5 shadow-sm">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total Revenue</p>
+                <p className="mt-0.5 truncate text-lg font-bold text-slate-900">Ksh {formatWhole(summary.cashReceived).toLocaleString()}</p>
+              </div>
+            </div>
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
@@ -334,42 +350,42 @@ export default function Sales() {
               </div>
               <div className="flex items-center justify-between gap-4 shadow-sm pb-2 pl-2">
                 <div className="flex items-center gap-4">
-                <span
-                  className="flex items-center gap-1 cursor-pointer text-sm text-slate-700 pl-2"
-                  onClick={() => setShowCreditList(prev => !prev)}
-                >
-                  <input
-                    type="checkbox"
-                    readOnly
-                    checked={showCreditList}
-                    className=""
-                  />
-                  {showCreditList ? "Hide" : "Show"} Credit Sales
-                </span>
-                <div className="max-w-xl flex sm:flex-col items-center gap-1">
-                  <label className="flex items-center gap-1 cursor-pointer text-sm text-slate-700 pl-2">
+                  <span
+                    className="flex items-center gap-1 cursor-pointer text-sm text-slate-700 pl-2"
+                    onClick={() => setShowCreditList(prev => !prev)}
+                  >
                     <input
                       type="checkbox"
-                      checked={etimsMode}
-                      onChange={(e) => {
-                        const enabled = e.target.checked;
-                        setEtimsMode(enabled);
-                        localStorage.setItem("etimsMode", String(enabled));
-                      }}
+                      readOnly
+                      checked={showCreditList}
+                      className=""
                     />
+                    {showCreditList ? "Hide" : "Show"} Credit Sales
+                  </span>
+                  <div className="max-w-xl flex sm:flex-col items-center gap-1">
+                    <label className="flex items-center gap-1 cursor-pointer text-sm text-slate-700 pl-2">
+                      <input
+                        type="checkbox"
+                        checked={etimsMode}
+                        onChange={(e) => {
+                          const enabled = e.target.checked;
+                          setEtimsMode(enabled);
+                          localStorage.setItem("etimsMode", String(enabled));
+                        }}
+                      />
 
-                    eTIMS (Test)
-                  </label>
-                </div>
+                      eTIMS (Test)
+                    </label>
+                  </div>
                 </div>
                 <input
-          className="rounded-lg mx-1 py-1.5 border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-          type="date"
-          name="datePick"
-          id="datePick"
-          value={selectedDate}
-          onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }}
-        />
+                  className="rounded-lg mx-1 py-1.5 border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  type="date"
+                  name="datePick"
+                  id="datePick"
+                  value={selectedDate}
+                  onChange={(e) => { setSelectedDate(e.target.value); loadSales(e.target.value); }}
+                />
               </div>
             </div>
 
